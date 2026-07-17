@@ -1,0 +1,12 @@
+# Configuration locale sensible (backend)
+application-local.properties
+
+# Fichiers Maven / build
+target/
+*.class
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
