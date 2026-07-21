@@ -103,7 +103,7 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
               <div className={tacheEditee ? 'col-md-7' : 'col-12'}>
                 {!estGestionnaire && (
                   <div className="alert alert-secondary fs-8 py-2 px-3 mb-3">
-                    🔒 Lecture seule : seul le Chef de Projet peut modifier les détails de cette tâche.
+                    Lecture seule : seul le Chef de Projet peut modifier les détails de cette tâche.
                     Utilisez les boutons <strong>Avancer / Reculer</strong> du tableau pour en faire évoluer le statut.
                   </div>
                 )}
@@ -143,13 +143,13 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
                     </select>
                     {membresDuProjet.length === 0 && (
                       <div className="form-text text-warning fs-8 mt-1">
-                        ⚠️ Aucun membre n'est lié à ce projet. Associez-y d'abord des collaborateurs dans les projets ou membres.
+                        Aucun membre n'est lié à ce projet. Associez-y d'abord des collaborateurs dans les projets ou membres.
                       </div>
                     )}
                   </div>
 
                   <div className="row g-2 mb-3">
-                    <div className="col-6">
+                    <div className="col-12 col-sm-6 mb-2 mb-sm-0">
                       <label className="form-label fs-7 text-secondary fw-semibold">Statut</label>
                       <select className="form-select bg-white text-dark border-light-subtle" value={statut} onChange={(e) => setStatut(e.target.value)}>
                         <option value="A_FAIRE">À faire</option>
@@ -157,7 +157,7 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
                         <option value="TERMINE">Terminé</option>
                       </select>
                     </div>
-                    <div className="col-6">
+                    <div className="col-12 col-sm-6">
                       <label className="form-label fs-7 text-secondary fw-semibold">Priorité</label>
                       <select className="form-select bg-white text-dark border-light-subtle" value={priorite} onChange={(e) => setPriorite(e.target.value)}>
                         <option value="BASSE">Basse</option>
@@ -202,7 +202,7 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
 
               {/* Section Commentaires */}
               {tacheEditee && (
-                <div className="col-md-5 border-start border-light-subtle ps-md-4 d-flex flex-column">
+                <div className="col-md-5 border-start-md ps-md-4 d-flex flex-column">
                   <div className="d-flex align-items-center gap-2 mb-3">
                     <MessageSquare size={18} className="text-warning" />
                     <h6 className="fw-bold mb-0 text-dark">Commentaires ({tacheEditee.commentaires?.length || 0})</h6>

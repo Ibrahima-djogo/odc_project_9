@@ -35,7 +35,7 @@ export default function TableauKanban({ taches, projets, membres, projetFiltreId
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
           <h1 className="h3 fw-bold text-dark mb-1">Tableau des Tâches</h1>
           <p className="text-secondary mb-0">
@@ -47,10 +47,10 @@ export default function TableauKanban({ taches, projets, membres, projetFiltreId
           </p>
         </div>
         
-        <div className="d-flex align-items-center gap-3 flex-wrap" style={{ minWidth: 0 }}>
+        <div className="d-flex align-items-center gap-2 flex-wrap flex-shrink-0">
           <select 
-            className="form-select bg-white text-dark border-light-subtle shadow-sm form-select-mobile" 
-            style={{ width: '240px', maxWidth: '100%' }}
+            className="form-select bg-white text-dark border-light-subtle shadow-sm" 
+            style={{ width: 'auto', minWidth: '180px', maxWidth: '240px' }}
             value={projetFiltreId || ''}
             onChange={(e) => setProjetFiltreId(e.target.value || null)}
           >

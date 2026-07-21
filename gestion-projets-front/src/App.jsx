@@ -216,7 +216,7 @@ function App() {
       } catch (e) {
         console.error(e);
       }
-      declencherToast(`📧 Notification envoyée à ${destinataire} !`, 'mail');
+      declencherToast(`Notification envoyée à ${destinataire} !`, 'mail');
     } catch (err) {
       console.error("Erreur lors de l'envoi de l'email simulé au backend :", err);
     }
@@ -247,7 +247,7 @@ function App() {
           `Bonjour ${profil.prenom} ${profil.nom}, votre compte a été créé avec succès. Rôle : ${profil.role}.`
         );
       } else {
-        declencherToast(`👋 Bonjour ${profil.prenom}, ravi de vous revoir !`);
+        declencherToast(`Bonjour ${profil.prenom}, ravi de vous revoir !`);
       }
     } catch (err) {
       console.error('Erreur chargement profil :', err);
@@ -460,9 +460,8 @@ function App() {
       let utilisateurId = membre.id;
       const estNouveau = !membre.id || membre.id.startsWith('m_');
 
-      // roleGlobal (ADMIN/MEMBRE) est un choix explicite et distinct de la
-      // fonction/rôle par projet (voir membre.projetRoles ci-dessous).
-      const roleGlobal = membre.roleGlobal === 'ADMIN' ? 'ADMIN' : 'MEMBRE';
+      // roleGlobal (ADMIN/CHEF_DE_PROJET/MEMBRE) est un choix explicite
+      const roleGlobal = membre.roleGlobal || 'MEMBRE';
 
       if (estNouveau) {
         // Le mot de passe est défini par l'admin dans le formulaire de création
@@ -483,12 +482,12 @@ function App() {
           'Invitation sur la plateforme WorkPulse ODC',
           `Bonjour ${membre.prenom} ${membre.nom}, vous avez été ajouté(e) à l'équipe.\n\n` +
           `Vos identifiants de connexion :\n` +
-          `📧 Email : ${membre.email}\n` +
-          `🔑 Mot de passe : ${mdp}\n\n` +
+          `Email : ${membre.email}\n` +
+          `Mot de passe : ${mdp}\n\n` +
           `Connectez-vous sur la plateforme et changez votre mot de passe dès que possible.`,
           membre.projetIds || []
         );
-        declencherToast(`✅ Compte créé pour ${membre.prenom} ${membre.nom} !`);
+        declencherToast(`Compte créé pour ${membre.prenom} ${membre.nom} !`);
 
       } else {
         const idNumerique = (membre.id && !isNaN(membre.id)) ? parseInt(membre.id, 10) : null;
@@ -636,11 +635,13 @@ function App() {
       />
 
       <div
-        className={`flex-grow-1 d-flex flex-column ${estMobile ? 'main-content-mobile' : ''}`}
+        className={`d-flex flex-column ${estMobile ? 'main-content-mobile' : ''}`}
         style={{
           marginLeft: estMobile ? '0px' : (estSidebarReduit ? '80px' : '260px'),
+          width: estMobile ? '100%' : (estSidebarReduit ? 'calc(100% - 80px)' : 'calc(100% - 260px)'),
           minHeight: '100vh',
-          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          minWidth: 0,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
         <Navbar
@@ -731,7 +732,7 @@ function App() {
               : (
                 <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
                   <div className="text-center p-5 rounded-4 border border-danger-subtle bg-danger-subtle shadow-sm" style={{ maxWidth: '480px' }}>
-                    <div className="fs-1 mb-3">🔒</div>
+                    <div className="fs-1 mb-3 text-danger"><i className="bi bi-lock-fill"></i></div>
                     <h2 className="h4 fw-bold text-danger mb-2">Accès refusé</h2>
                     <p className="text-secondary mb-0">
                       La section <strong>Export BDD</strong> est réservée aux <strong>Administrateurs et Chefs de Projet</strong>.

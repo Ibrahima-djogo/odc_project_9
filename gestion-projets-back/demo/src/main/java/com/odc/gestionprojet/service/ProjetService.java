@@ -1,6 +1,7 @@
 package com.odc.gestionprojet.service;
 
 import com.odc.gestionprojet.dto.ProjetRequest;
+import java.util.List;
 import com.odc.gestionprojet.dto.ProjetResponse;
 import com.odc.gestionprojet.entity.MembreProjet;
 import com.odc.gestionprojet.entity.Projet;
@@ -13,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -50,13 +51,34 @@ public class ProjetService {
 
         Projet sauvegarde = projetRepository.save(projet);
 
-        // Le créateur est automatiquement ajouté comme membre CHEF_PROJET
-        // afin qu'il puisse immédiatement créer des tâches dans son projet.
-        MembreProjet membreCreateur = new MembreProjet();
-        membreCreateur.setProjet(sauvegarde);
-        membreCreateur.setUtilisateur(createur);
-        membreCreateur.setRoleProjet("CHEF_PROJET");
-        membreProjetRepository.save(membreCreateur);
+        // ----- Gestion des rôles -----
+        // 1. Ajouter le créateur comme CHEF_PROJET (si aucun chef n'est fourni, il reste le chef).
+        final Long chefId = request.getChefDeProjetId() != null ? request.getChefDeProjetId() : createurId;
+        Utilisateur chef = utilisateurRepository.findById(chefId)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", chefId));
+
+        // Ajouter le chef au projet (peut être le créateur ou un autre utilisateur)
+        MembreProjet membreChef = new MembreProjet();
+        membreChef.setProjet(sauvegarde);
+        membreChef.setUtilisateur(chef);
+        membreChef.setRoleProjet("CHEF_PROJET");
+        membreProjetRepository.save(membreChef);
+
+        // 2. Ajouter les membres supplémentaires (si fournis)
+        List<Long> idsMembres = request.getMembreIdsAffectes();
+        if (idsMembres != null) {
+            for (Long membreId : idsMembres) {
+                // Ignorer si déjà ajouté comme chef ou créateur
+                if (Objects.equals(membreId, chefId)) continue;
+                Utilisateur utilisateur = utilisateurRepository.findById(membreId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", membreId));
+                MembreProjet mp = new MembreProjet();
+                mp.setProjet(sauvegarde);
+                mp.setUtilisateur(utilisateur);
+                mp.setRoleProjet("MEMBRE");
+                membreProjetRepository.save(mp);
+            }
+        }
 
         return toResponse(sauvegarde);
     }

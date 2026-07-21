@@ -51,11 +51,20 @@ public class MembreProjet {
     @Column(name = "role_projet", nullable = false, length = 50)
     private String roleProjet = "MEMBRE";
 
+    // Colonne héritée 'role' dans la table membres_projet (NOT NULL, pas de défaut).
+    // On la remplit automatiquement avec la même valeur que roleProjet.
+    @Column(name = "role", nullable = false, length = 50)
+    private String role = "MEMBRE";
+
     @Column(name = "date_ajout", nullable = false, updatable = false)
     private LocalDateTime dateAjout;
 
     @PrePersist
     protected void onCreate() {
         this.dateAjout = LocalDateTime.now();
+        // Synchroniser la colonne héritée 'role' avec roleProjet
+        if (this.roleProjet != null) {
+            this.role = this.roleProjet;
+        }
     }
 }

@@ -15,7 +15,7 @@ export default function ListeProjets({ projets, taches, surOuvrirModal, surSuppr
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
         <div>
           <h1 className="h3 fw-bold text-dark mb-1">Gestion des Projets</h1>
           <p className="text-secondary mb-0">
@@ -24,7 +24,7 @@ export default function ListeProjets({ projets, taches, surOuvrirModal, surSuppr
         </div>
         {/* Bouton "Nouveau Projet" : création d'un projet requiert le droit global (aucun rôle par-projet n'existe encore) */}
         {estChef && (
-          <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm" onClick={() => surOuvrirModal(null)}>
+          <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm text-nowrap" onClick={() => surOuvrirModal(null)}>
             <Plus size={18} />
             <span>Nouveau Projet</span>
           </button>

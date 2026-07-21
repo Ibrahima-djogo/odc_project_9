@@ -21,6 +21,7 @@ export default function Login({ surConnexion }) {
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  const [roleGlobal, setRoleGlobal] = useState('MEMBRE');
 
   // Gestion d'avatar (Stocké dans le state de session pour le design)
   const [typeAvatar, setTypeAvatar] = useState('initials'); // 'gravatar' | 'initials' | 'predefini' | 'custom'
@@ -29,11 +30,6 @@ export default function Login({ surConnexion }) {
   
   // Message d'erreur d'API
   const [erreur, setErreur] = useState('');
-
-  // L'inscription publique ne peut JAMAIS créer de compte ADMIN ou CHEF_DE_PROJET :
-  // ces rôles ne peuvent être attribués que depuis l'espace d'administration
-  // (voir ModalMembre.jsx). Le backend impose d'ailleurs la même règle de son côté.
-  const obtenirRoleGlobal = () => 'MEMBRE';
 
   // Calcule l'URL de l'avatar choisi par l'utilisateur
   const obtenirAvatarUrlFinal = () => {
@@ -90,14 +86,14 @@ export default function Login({ surConnexion }) {
     }
 
     try {
-      // Inscription publique : toujours MEMBRE (le backend l'impose aussi).
+      // Inscription publique : le rôle choisi (ADMIN, CHEF_DE_PROJET ou MEMBRE) est transmis.
       // Le token JWT est stocké automatiquement par api.register().
       await api.register(
         nom.trim(),
         prenom.trim(),
         email.trim().toLowerCase(),
         motDePasse,
-        obtenirRoleGlobal()  // toujours 'MEMBRE'
+        roleGlobal
       );
 
       // surConnexion(true) charge le profil réel depuis /api/utilisateurs/moi
@@ -108,20 +104,39 @@ export default function Login({ surConnexion }) {
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-dark position-relative overflow-hidden" 
+    <div
+      className="position-relative"
       style={{
+        minHeight: '100dvh',
+        minHeight: '100vh',
         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        fontFamily: "'Inter', sans-serif"
+        fontFamily: "'Inter', sans-serif",
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        overflowY: 'auto',
+        padding: '1rem 0.75rem',
       }}
     >
       {/* Cercles de fond d'ambiance design */}
-      <div className="position-absolute bg-warning rounded-circle opacity-10 filter-blur" 
-        style={{ width: '400px', height: '400px', top: '-10%', left: '-10%', filter: 'blur(100px)' }}></div>
-      <div className="position-absolute bg-info rounded-circle opacity-10 filter-blur" 
-        style={{ width: '400px', height: '400px', bottom: '-10%', right: '-10%', filter: 'blur(100px)' }}></div>
+      <div className="position-absolute bg-warning rounded-circle opacity-10" 
+        style={{ width: '400px', height: '400px', top: '-10%', left: '-10%', filter: 'blur(100px)', pointerEvents: 'none' }}></div>
+      <div className="position-absolute bg-info rounded-circle opacity-10" 
+        style={{ width: '400px', height: '400px', bottom: '-10%', right: '-10%', filter: 'blur(100px)', pointerEvents: 'none' }}></div>
 
-      <div className="card border-0 rounded-4 shadow-2xl overflow-hidden bg-white text-dark m-3" 
-        style={{ maxWidth: '480px', width: '100%', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div
+        className="card border-0 rounded-4 shadow-2xl bg-white text-dark position-relative"
+        style={{
+          maxWidth: '480px',
+          width: '100%',
+          marginTop: 'auto',
+          marginBottom: 'auto',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          zIndex: 1,
+        }}
+      >
         
         {/* Header Orange ODC */}
         <div className="bg-warning p-4 text-center text-dark position-relative">
@@ -132,7 +147,7 @@ export default function Login({ surConnexion }) {
           <p className="fs-7 text-dark-emphasis mb-0">Espace de Gestion Collaborative</p>
         </div>
 
-        <div className="card-body p-4 p-md-5">
+        <div className="card-body p-3 p-sm-4 p-md-5">
           {erreur && (
             <div className="alert alert-danger fs-7 py-2 px-3 mb-4 rounded-3 d-flex align-items-center gap-2">
               <span>{erreur}</span>
@@ -203,7 +218,7 @@ export default function Login({ surConnexion }) {
               </h4>
 
               <div className="row g-3 mb-3">
-                <div className="col-6">
+                <div className="col-12 col-sm-6">
                   <label className="form-label fs-7 text-secondary fw-semibold">Prénom *</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light border-light-subtle text-secondary"><User size={16} /></span>
@@ -217,7 +232,7 @@ export default function Login({ surConnexion }) {
                     />
                   </div>
                 </div>
-                <div className="col-6">
+                <div className="col-12 col-sm-6">
                   <label className="form-label fs-7 text-secondary fw-semibold">Nom *</label>
                   <input 
                     type="text" 
@@ -261,12 +276,28 @@ export default function Login({ surConnexion }) {
                 </div>
               </div>
 
+              {/* Sélection du rôle de sécurité global */}
+              <div className="mb-3">
+                <label className="form-label fs-7 text-secondary fw-semibold">Rôle de sécurité *</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-light border-light-subtle text-secondary"><Shield size={16} /></span>
+                  <select 
+                    className="form-select bg-light border-light-subtle text-dark fs-7"
+                    value={roleGlobal}
+                    onChange={(e) => setRoleGlobal(e.target.value)}
+                    required
+                  >
+                    <option value="MEMBRE">Membre standard</option>
+                    <option value="ADMIN">Administrateur (Accès total)</option>
+                    <option value="CHEF_DE_PROJET">Chef de Projet global</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="mb-3 p-3 bg-light rounded-3 border border-light-subtle fs-8 text-secondary d-flex align-items-center gap-2">
                 <Shield size={16} className="text-warning flex-shrink-0" />
                 <span>
-                  Un compte créé ici est toujours un compte Membre standard. Les rôles Administrateur
-                  et les fonctions par projet (Développeur, Designer, Testeur...) sont attribués depuis
-                  l'espace d'administration, une fois affecté à un projet.
+                  Le rôle sélectionné détermine vos privilèges globaux. L'Administrateur a accès à l'ensemble du système et des projets.
                 </span>
               </div>
 
@@ -277,7 +308,7 @@ export default function Login({ surConnexion }) {
                 </label>
                 
                 {/* Sélecteur de source d'avatar */}
-                <div className="btn-group w-100 mb-3" role="group">
+                <div className="btn-group avatar-btn-group w-100 mb-3" role="group">
                   <button 
                     type="button" 
                     className={`btn btn-sm btn-outline-secondary fs-8 py-1.5 ${typeAvatar === 'initials' ? 'active bg-dark text-white' : ''}`}

@@ -50,4 +50,11 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
            "  SELECT mp2.projet.id FROM MembreProjet mp2 WHERE mp2.utilisateur.id = :userId" +
            ") AND u.id <> :userId")
     List<Utilisateur> findCollaborateursPartageantUnProjet(@Param("userId") Long userId);
+
+    /**
+     * Compte le nombre d'utilisateurs ayant un roleGlobal precis.
+     * Utilise uniquement dans AuthService.register() pour detecter
+     * l'absence totale d'ADMIN (cas bootstrap).
+     */
+    long countByRoleGlobal(String roleGlobal);
 }

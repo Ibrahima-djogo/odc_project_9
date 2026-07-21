@@ -234,9 +234,68 @@ input, select, textarea {
   overflow-x: auto !important;
 }
 
+/* ============================================================
+   GLOBAL MODAL FIXES - PINNED FOOTER & PERFECT VERTICAL SCROLL
+   ============================================================ */
+.modal-dialog {
+  max-height: calc(100vh - 2rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  height: calc(100vh - 2rem) !important;
+  height: calc(100dvh - 2rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 1rem auto !important;
+}
+
+.modal-content {
+  height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.modal-content > form {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+}
+
+.modal-header {
+  flex: 0 0 auto !important;
+  padding: 1rem 1.25rem;
+}
+
+.modal-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+  padding: 1.25rem;
+}
+
+.modal-footer {
+  flex: 0 0 auto !important;
+  padding: 0.875rem 1.25rem;
+  background-color: #ffffff;
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+}
+
+/* Select dropdowns full width on mobile */
+.form-select-mobile {
+  width: 100% !important;
+}
+
 /* ===================== TABLETTE (< 992px) ===================== */
 @media (max-width: 991.98px) {
-  /* 2 colonnes sur tablette (4 sur desktop, 1 sur mobile — voir plus bas) */
   .grid-stats {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
@@ -248,6 +307,46 @@ input, select, textarea {
 
   .stat-val {
     font-size: 1.25rem;
+  }
+
+  .modal-dialog {
+    width: 95%;
+    max-width: 95% !important;
+    margin: 0.75rem auto !important;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 0.75rem 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.05rem;
+  }
+
+  /* Avatar button group responsive wrapping */
+  .avatar-btn-group {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.35rem !important;
+  }
+
+  .avatar-btn-group .btn {
+    border-radius: var(--radius-sm) !important;
+    width: 100% !important;
+    text-align: center;
+  }
+
+  /* Mobile responsiveness for border separators */
+  .border-start-md {
+    border-left: none !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding-top: 1rem !important;
+    margin-top: 1rem !important;
   }
 }
 
@@ -272,6 +371,7 @@ input, select, textarea {
   /* Main content takes full width on mobile */
   .main-content-mobile {
     margin-left: 0 !important;
+    width: 100% !important;
   }
 
   /* Kanban columns stack vertically */
@@ -342,47 +442,50 @@ input, select, textarea {
   .btn-hide-text-mobile span {
     display: none;
   }
+}
 
-  /* Select dropdowns full width on mobile */
-  .form-select-mobile {
-    width: 100% !important;
+/* ===================== DESKTOP / TABLETTE (> 768px) ===================== */
+@media (min-width: 768px) {
+  .avatar-btn-group {
+    display: flex !important;
   }
 
-  /* Modals : 92% de la largeur de l'ecran, marges/polices reduites, et
-     defilement vertical interne pour les formulaires longs (avatar,
-     affectation multi-projets...) sans depasser la hauteur de l'ecran. */
-  .modal-dialog {
-    width: 92%;
-    max-width: 92% !important;
-    margin: 1rem auto;
+  .border-start-md {
+    border-left: 1px solid var(--border-color) !important;
+    border-top: none !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
   }
+}
 
-  .modal-dialog-scrollable {
-    height: calc(100% - 2rem);
-  }
-
-  .modal-header,
-  .modal-footer {
-    padding: 0.75rem 1rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
-  }
-
-  .modal-title {
-    font-size: 1rem;
+@media (min-width: 992px) {
+  .modal-dialog.modal-lg {
+    max-width: 800px !important;
+    width: 800px !important;
   }
 }
 
 /* ===================== VERY SMALL MOBILE (< 480px) ===================== */
 @media (max-width: 479.98px) {
   h1.h3 {
-    font-size: 1.25rem !important;
+    font-size: 1.15rem !important;
   }
 
   .stat-val {
     font-size: 1rem;
   }
+
+  .modal-dialog {
+    width: 98%;
+    max-width: 98% !important;
+    margin: 0.35rem auto !important;
+  }
+
+  .avatar-btn-group {
+    grid-template-columns: 1fr !important;
+  }
 }
+
+
+
 

@@ -164,7 +164,7 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
                   />
                 </div>
 
-                <div className={estChef ? 'col-md-8' : 'col-12'}>
+                <div className={estChef ? 'col-12 col-md-8' : 'col-12'}>
                   <label className="form-label fs-7 text-secondary fw-semibold">Statut</label>
                   <select className="form-select bg-white text-dark border-light-subtle" value={statut} onChange={(e) => setStatut(e.target.value)}>
                     <option value="EN_COURS">En cours</option>
@@ -175,7 +175,7 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
 
                 {/* Champ Budget : visible uniquement pour les Chefs de Projet */}
                 {estChef && (
-                  <div className="col-md-4">
+                  <div className="col-12 col-md-4">
                     <label className="form-label fs-7 text-secondary fw-semibold">Budget (GNF)</label>
                     <div className="input-group">
                       <span className="input-group-text bg-light text-secondary border-light-subtle">₣</span>

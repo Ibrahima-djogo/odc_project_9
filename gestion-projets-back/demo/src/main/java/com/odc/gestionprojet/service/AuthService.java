@@ -49,12 +49,33 @@ public class AuthService {
         utilisateur.setEmail(request.getEmail());
         // C'est ICI que le mot de passe est hache avant d'etre stocke.
         utilisateur.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
-        // L'inscription publique cree TOUJOURS un compte MEMBRE, quoi que le
-        // client envoie dans "roleGlobal"/"role" (meme "ADMIN" ou
-        // "CHEF_DE_PROJET" envoye a la main via curl/Postman). Attribuer ces
-        // roles superieurs doit passer exclusivement par l'espace d'admin
-        // (UtilisateurService.creerUtilisateur, protege par @PreAuthorize).
-        utilisateur.setRoleGlobal("MEMBRE");
+        // -----------------------------------------------------------------------
+        // Determination du roleGlobal pour l'inscription publique.
+        //
+        // Regle generale : tout role envoye par le client est ignore et force
+        // a "MEMBRE" — un utilisateur public ne peut pas s'auto-promouvoir.
+        //
+        // Exception bootstrap (premier administrateur) :
+        //   Si le client demande explicitement "ADMIN" ET qu'aucun utilisateur
+        //   avec roleGlobal == "ADMIN" n'existe encore en base, on autorise la
+        //   creation d'un compte ADMIN. Cela permet de demarrer une instance
+        //   vierge sans avoir a intervenir directement en base de donnees.
+        //
+        //   Cette exception se referme AUTOMATIQUEMENT des qu'un premier ADMIN
+        //   existe : a partir de ce moment, toute demande de role ADMIN en
+        //   inscription publique est silencieusement ignoree et ramene a MEMBRE.
+        //   Ce mecanisme n'est donc pas une faille : il est auto-guerissant.
+        // -----------------------------------------------------------------------
+        String roleDemande = (request.getRoleGlobal() != null && !request.getRoleGlobal().isBlank())
+                ? request.getRoleGlobal().trim()
+                : "";
+
+        boolean demandeAdmin = "ADMIN".equalsIgnoreCase(roleDemande);
+        boolean aucunAdminEnBase = utilisateurRepository.countByRoleGlobal("ADMIN") == 0;
+
+        String roleAttribue = (demandeAdmin && aucunAdminEnBase) ? "ADMIN" : "MEMBRE";
+        utilisateur.setRoleGlobal(roleAttribue);
+
 
         Utilisateur utilisateurSauvegarde = utilisateurRepository.save(utilisateur);
 

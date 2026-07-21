@@ -179,7 +179,7 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                       minLength={6}
                     />
                     <div className="form-text fs-8">
-                      🔑 Ce mot de passe sera communiqué au membre pour sa première connexion.
+                      Ce mot de passe sera communiqué au membre pour sa première connexion.
                     </div>
                   </div>
                 )}
@@ -193,6 +193,7 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                   >
                     <option value="MEMBRE">Membre</option>
                     <option value="ADMIN">Administrateur</option>
+                    <option value="CHEF_DE_PROJET">Chef de Projet</option>
                   </select>
                   <div className="form-text fs-8">
                     Détermine les droits globaux (Admin = accès à tout). Indépendant de sa fonction par projet ci-dessous.
@@ -240,16 +241,16 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                         const projet = projets.find(p => p.id === pId);
                         if (!projet) return null;
                         return (
-                          <div key={pId} className="d-flex align-items-center gap-2">
+                          <div key={pId} className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-1 gap-sm-2 pb-2 pb-sm-0 border-bottom border-light-subtle border-bottom-sm-0">
                             <span
-                              className="fs-8 text-dark text-truncate"
-                              style={{ minWidth: '140px', maxWidth: '140px' }}
+                              className="fs-8 text-dark fw-medium text-truncate w-100 w-sm-auto"
+                              style={{ maxWidth: '200px' }}
                               title={projet.titre}
                             >
                               {projet.titre}
                             </span>
                             <select
-                              className="form-select form-select-sm bg-white text-dark border-light-subtle"
+                              className="form-select form-select-sm bg-white text-dark border-light-subtle w-100 w-sm-auto flex-grow-1"
                               value={projetRoles[pId] || 'MEMBRE'}
                               onChange={(e) => changerRoleProjet(pId, e.target.value)}
                             >
@@ -270,7 +271,7 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                     <Image size={16} /> Photo de profil
                   </label>
 
-                  <div className="btn-group w-100 mb-3" role="group">
+                  <div className="btn-group avatar-btn-group w-100 mb-3" role="group">
                     <button
                       type="button"
                       className={`btn btn-sm btn-outline-secondary fs-8 py-1.5 ${typeAvatar === 'initials' ? 'active bg-dark text-white' : ''}`}
@@ -338,11 +339,11 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                   )}
 
                   {/* Aperçu en temps réel */}
-                  <div className="d-flex align-items-center gap-3 p-3 bg-light rounded-3 border border-light-subtle">
+                  <div className="d-flex flex-column flex-sm-row align-items-center gap-3 p-3 bg-light rounded-3 border border-light-subtle text-center text-sm-start">
                     <img
                       src={obtenirAvatarUrlFinal()}
                       alt="Aperçu du profil"
-                      className="rounded-circle border border-warning"
+                      className="rounded-circle border border-warning flex-shrink-0"
                       style={{ width: '56px', height: '56px', objectFit: 'cover' }}
                     />
                     <div>

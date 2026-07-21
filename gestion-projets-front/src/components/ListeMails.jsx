@@ -42,7 +42,7 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
           <h1 className="h3 fw-bold text-dark d-flex align-items-center gap-2 mb-1">
             <Mail size={28} className="text-warning" />
@@ -50,7 +50,7 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
           </h1>
           <p className="text-secondary mb-0">Consultez l'historique de vos e-mails et envoyez de nouveaux messages à vos collaborateurs.</p>
         </div>
-        <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm" onClick={() => setModalOuverte(true)}>
+        <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm text-nowrap px-3 flex-shrink-0" onClick={() => setModalOuverte(true)}>
           <Plus size={18} />
           <span>Nouveau Mail</span>
         </button>
@@ -203,7 +203,7 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
                         </div>
                         
                         <div className="mt-4 p-3 bg-warning-subtle border border-warning-subtle rounded-3 fs-8 text-dark">
-                          💡 Vous pouvez répondre à ce collaborateur en cliquant sur le bouton <strong>"Nouveau Mail"</strong> en haut de la page.
+                          Vous pouvez répondre à ce collaborateur en cliquant sur le bouton <strong>"Nouveau Mail"</strong> en haut de la page.
                         </div>
                       </div>
                     )}

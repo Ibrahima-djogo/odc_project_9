@@ -11,9 +11,9 @@ export default function Navbar({ recherche, setRecherche, surClicNouveauProjet, 
   // projet (membres_projet.role_projet), pas un attribut global de l'utilisateur.
   const obtenirTitreAffiche = () => {
     const rg = utilisateurConnecte?.roleGlobal || 'MEMBRE';
-    if (rg === 'SUPER_ADMIN') return '⭐ Super Admin';
-    if (rg === 'ADMIN')       return '👑 Administrateur';
-    return '👤 Membre';
+    if (rg === 'SUPER_ADMIN') return 'Super Admin';
+    if (rg === 'ADMIN')       return 'Administrateur';
+    return 'Membre';
   };
 
   return (

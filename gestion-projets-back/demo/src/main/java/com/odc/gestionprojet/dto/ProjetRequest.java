@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Objet recu du client lors de la creation ou modification d'un projet.
@@ -37,4 +38,10 @@ public class ProjetRequest {
     private String priorite = "NORMALE";
 
     private BigDecimal budget;
+
+    private Long chefDeProjetId;
+    private List<Long> membreIdsAffectes;
+
+    // Getters and setters are provided by Lombok
+
 }
