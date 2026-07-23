@@ -62,7 +62,19 @@ public class MembreProjet {
     @PrePersist
     protected void onCreate() {
         this.dateAjout = LocalDateTime.now();
-        // Synchroniser la colonne héritée 'role' avec roleProjet
+        synchroniserColonneHeritee();
+    }
+
+    // La colonne 'role' est un vestige du schema avant l'introduction de
+    // roleProjet (NOT NULL, sans defaut, donc on ne peut pas la supprimer
+    // sans migration) : on la garde synchronisee a chaque ecriture pour
+    // qu'elle ne devienne jamais une deuxieme source de verite divergente.
+    @PreUpdate
+    protected void onUpdate() {
+        synchroniserColonneHeritee();
+    }
+
+    private void synchroniserColonneHeritee() {
         if (this.roleProjet != null) {
             this.role = this.roleProjet;
         }

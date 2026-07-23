@@ -113,17 +113,23 @@ public class CommentaireService {
 
     /**
      * Supprime un commentaire par son identifiant.
+     * Memes regles d'acces que la lecture/creation : ADMIN, membre du projet
+     * de la tache concernee, ou assigne de cette tache.
      */
     public void supprimerCommentaire(Long commentaireId) {
         Objects.requireNonNull(commentaireId, "commentaireId must not be null");
-        if (!commentaireRepository.existsById(commentaireId)) {
-            throw new ResourceNotFoundException("Commentaire", commentaireId);
-        }
-        commentaireRepository.deleteById(commentaireId);
+        Commentaire commentaire = commentaireRepository.findById(commentaireId)
+                .orElseThrow(() -> new ResourceNotFoundException("Commentaire", commentaireId));
+
+        verifierAccesAuProjetDeLaTache(commentaire.getTache());
+
+        commentaireRepository.delete(commentaire);
     }
 
     /**
      * Modifie le contenu d'un commentaire.
+     * Memes regles d'acces que la lecture/creation : ADMIN, membre du projet
+     * de la tache concernee, ou assigne de cette tache.
      */
     public CommentaireResponse modifierCommentaire(Long commentaireId, CommentaireRequest request) {
         Objects.requireNonNull(commentaireId, "commentaireId must not be null");
@@ -131,6 +137,8 @@ public class CommentaireService {
 
         Commentaire commentaire = commentaireRepository.findById(commentaireId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commentaire", commentaireId));
+
+        verifierAccesAuProjetDeLaTache(commentaire.getTache());
 
         commentaire.setContenu(request.getContenu());
         Commentaire mis_a_jour = commentaireRepository.save(commentaire);
