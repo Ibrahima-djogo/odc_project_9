@@ -42,11 +42,14 @@ public class Projet {
     @Column(name = "date_fin")
     private LocalDate dateFin;
 
-    // Statut du projet : EN_COURS, TERMINE, EN_PAUSE...
-    // On reste en String simple pour rester flexible, mais on pourrait
-    // passer a un Enum si on veut forcer un nombre fixe de valeurs.
+    // Statut du projet : PLANIFIE, EN_COURS ou TERMINE. Entierement calcule a
+    // partir des taches du projet (voir TacheService.recalculerStatutProjet) :
+    // PLANIFIE tant qu'aucune tache n'a demarre, EN_COURS des qu'au moins une
+    // tache est EN_COURS, TERMINE quand TOUTES les taches sont TERMINE. Ce
+    // champ n'est jamais modifiable manuellement (ni a la creation au-dela du
+    // defaut, ni via une mise a jour de projet).
     @Column(nullable = false, length = 30)
-    private String statut = "EN_COURS";
+    private String statut = "PLANIFIE";
 
     // Priorite : BASSE, NORMALE, HAUTE, URGENTE
     @Column(length = 20)

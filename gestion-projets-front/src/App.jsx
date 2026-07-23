@@ -282,40 +282,27 @@ function App() {
    */
   const sauvegarderProjet = async (projet) => {
     try {
-      const projetSauve = await api.sauvegarderProjet(projet);
       const isEdition = projet.id && !projet.id.startsWith('p_');
+      const projetSauve = await api.sauvegarderProjet(projet);
 
-      // Gestion des affectations multiples (Many-to-Many)
-      // Si un chefDeProjetId a été spécifié (à la création), on s'assure qu'il est ajouté
-      if (!isEdition && projet.chefDeProjetId) {
-        if (String(projet.chefDeProjetId) !== String(utilisateurConnecte.id)) {
-          // 'CHEF_PROJET' est le rôle PAR PROJET (table membres_projet), à ne
-          // pas confondre avec un rôle global : c'est la valeur que backend
-          // reconnaît pour accorder les droits de gestion sur CE projet précis.
-          await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(projet.chefDeProjetId), 'CHEF_PROJET');
-        }
-      }
-
-      if (projet.membreIdsAffectes) {
-        let membresActuelsBack = [];
-        if (isEdition) {
-          membresActuelsBack = await api.getMembresProjet(parseInt(projet.id));
-        }
-        
+      if (!isEdition) {
+        // Création : le chef nommé (chefDeProjetId) et les membres cochés
+        // (membreIdsAffectes) sont transmis dans le corps même de la requête
+        // POST /api/projets et affectés en une seule transaction côté backend
+        // (ProjetService.creerProjet) — rien à refaire ici, sous peine de
+        // provoquer des doublons/conflits (409) sur des adhésions déjà créées.
+      } else if (projet.membreIdsAffectes) {
+        // Modification : le backend ne touche pas aux affectations lors d'un
+        // PUT /api/projets/{id}, donc on synchronise nous-mêmes par diff.
+        const membresActuelsBack = await api.getMembresProjet(parseInt(projet.id));
         const idsActuels = membresActuelsBack.map(m => m.utilisateurId.toString());
         const idsCibles = projet.membreIdsAffectes.map(id => id.toString());
 
-        // 1. Ajouter les nouveaux membres affectés
+        // 1. Ajouter les nouveaux membres affectés (rôle par défaut : MEMBRE ;
+        // la fonction précise se règle ensuite depuis la fiche du projet)
         for (const targetId of idsCibles) {
           if (!idsActuels.includes(targetId)) {
-            // Tous les membres ajoutés en lot via la liste sont désormais des MEMBRES,
-            // sauf s'il s'agit du chef de projet explicitement nommé à l'instant.
-            const roleBackend = (String(targetId) === String(projet.chefDeProjetId)) ? 'CHEF_PROJET' : 'MEMBRE';
-            
-            // On évite de rajouter en double le chef de projet si on vient de le faire ci-dessus
-            if (roleBackend === 'MEMBRE' || isEdition) {
-              await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(targetId), roleBackend);
-            }
+            await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(targetId), 'MEMBRE');
           }
         }
 

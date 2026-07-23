@@ -17,9 +17,9 @@ public class DashboardStatsResponse {
 
     // ---- Statistiques sur les projets ----
     private long totalProjets;
+    private long projetsPlanifies;
     private long projetsEnCours;
     private long projetsTermines;
-    private long projetsEnPause;
 
     // ---- Statistiques sur les taches (tous projets confondus) ----
     private long totalTaches;

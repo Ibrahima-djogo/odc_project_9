@@ -35,9 +35,9 @@ public class DashboardService {
 
         // ---- Statistiques projets ----
         stats.setTotalProjets(projetRepository.count());
+        stats.setProjetsPlanifies(projetRepository.findByStatut("PLANIFIE").size());
         stats.setProjetsEnCours(projetRepository.findByStatut("EN_COURS").size());
         stats.setProjetsTermines(projetRepository.findByStatut("TERMINE").size());
-        stats.setProjetsEnPause(projetRepository.findByStatut("EN_PAUSE").size());
 
         // ---- Statistiques taches ----
         stats.setTotalTaches(tacheRepository.count());

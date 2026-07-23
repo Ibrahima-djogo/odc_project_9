@@ -193,32 +193,47 @@ public class TacheService {
     }
 
     /**
-     * Recalcule automatiquement le statut d'un projet en fonction de ses
-     * taches : passe a TERMINE des que la derniere tache active se termine,
-     * et repasse a EN_COURS si une tache redevient active alors que le projet
-     * etait marque TERMINE. Ne touche jamais un projet sans aucune tache, ni
-     * un projet EN_PAUSE dont toutes les taches ne sont pas terminees (un
-     * statut EN_PAUSE reste une decision manuelle tant que ce n'est pas fini).
+     * Recalcule automatiquement le statut d'un projet a partir de l'etat
+     * courant de ses taches (jamais a partir de son statut precedent : ce
+     * n'est pas un simple bascule, c'est une fonction pure de l'ensemble des
+     * taches, appelee apres chaque creation/modification/suppression de
+     * tache). Regles, dans cet ordre :
+     * 1. Aucune tache, ou aucune n'est encore demarree/terminee -> PLANIFIE.
+     * 2. Des qu'au moins une tache est EN_COURS -> EN_COURS.
+     * 3. Uniquement quand TOUTES les taches sont TERMINE -> TERMINE.
+     * Le statut d'un projet n'est plus modifiable manuellement ailleurs dans
+     * l'application (voir ProjetService) : ce calcul en est la seule source.
      */
     private void recalculerStatutProjet(Long projetId) {
+        Objects.requireNonNull(projetId, "projetId must not be null");
         Projet projet = projetRepository.findById(projetId).orElse(null);
         if (projet == null) {
             return;
         }
         List<Tache> tachesProjet = tacheRepository.findByProjetId(projetId);
+        String statutCalcule = calculerStatutSelonTaches(tachesProjet);
+
+        if (!statutCalcule.equals(projet.getStatut())) {
+            projet.setStatut(statutCalcule);
+            projetRepository.save(projet);
+        }
+    }
+
+    private String calculerStatutSelonTaches(List<Tache> tachesProjet) {
         if (tachesProjet.isEmpty()) {
-            return;
+            return "PLANIFIE";
         }
         boolean toutesTerminees = tachesProjet.stream()
                 .allMatch(t -> "TERMINE".equals(t.getStatut()));
-
-        if (toutesTerminees && !"TERMINE".equals(projet.getStatut())) {
-            projet.setStatut("TERMINE");
-            projetRepository.save(projet);
-        } else if (!toutesTerminees && "TERMINE".equals(projet.getStatut())) {
-            projet.setStatut("EN_COURS");
-            projetRepository.save(projet);
+        if (toutesTerminees) {
+            return "TERMINE";
         }
+        boolean uneEnCours = tachesProjet.stream()
+                .anyMatch(t -> "EN_COURS".equals(t.getStatut()));
+        if (uneEnCours) {
+            return "EN_COURS";
+        }
+        return "PLANIFIE";
     }
 
     // =========================================================================

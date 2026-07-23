@@ -26,11 +26,9 @@ public class ProjetRequest {
 
     private LocalDate dateFin;
 
-    /**
-     * Valeurs acceptees : EN_COURS, TERMINE, EN_PAUSE
-     * La validation du contenu est faite dans le service.
-     */
-    private String statut = "EN_COURS";
+    // Pas de champ "statut" ici : il est entierement calcule par le backend
+    // a partir des taches du projet (voir TacheService.recalculerStatutProjet),
+    // jamais fourni ni modifiable par le client.
 
     /**
      * Valeurs acceptees : BASSE, NORMALE, HAUTE, URGENTE

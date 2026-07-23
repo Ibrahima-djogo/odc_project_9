@@ -103,7 +103,17 @@ public class DatabaseInitializer implements CommandLineRunner {
             // -----------------------------------------------------------------
             // 2. CREATION DES PROJETS
             // -----------------------------------------------------------------
+            // Le statut de chaque projet est desormais entierement calcule a
+            // partir de ses taches (voir TacheService.recalculerStatutProjet) :
+            // PLANIFIE si aucune tache EN_COURS/TERMINE, EN_COURS des qu'une
+            // tache est EN_COURS, TERMINE seulement si TOUTES le sont. Ce
+            // seeder appelle directement les repositories (pas TacheService),
+            // donc il doit lui-meme choisir des valeurs coherentes avec les
+            // taches creees plus bas — sinon la prochaine tache modifiee sur
+            // ce projet ecrasera silencieusement la valeur mise ici.
+
             // Projet 1 : Plateforme E-Commerce Multi-vendeurs (créé par Mamadou)
+            // -> t1 TERMINE + t2 EN_COURS = EN_COURS (pas toutes terminees, une EN_COURS)
             Projet p1 = new Projet();
             p1.setNom("Plateforme E-Commerce Multi-vendeurs");
             p1.setDescription("Développement d’une application web complète de vente en ligne avec paiement sécurisé.");
@@ -115,6 +125,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             p1 = projetRepository.save(p1);
 
             // Projet 2 : Application Mobile de Télémédecine (créé par Mamadou)
+            // -> t3 EN_COURS = EN_COURS
             Projet p2 = new Projet();
             p2.setNom("Application Mobile de Télémédecine");
             p2.setDescription("Système mobile de prise de rendez-vous médical et consultation à distance.");
@@ -126,6 +137,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             p2 = projetRepository.save(p2);
 
             // Projet 3 : Refonte de Charte & Site Vitrine (créé par Aïssatou)
+            // -> t4 TERMINE (seule tache du projet) = TERMINE
             Projet p3 = new Projet();
             p3.setNom("Refonte de Charte & Site Vitrine");
             p3.setDescription("Modernisation de l’identité visuelle, optimisation SEO et design responsive.");
@@ -189,7 +201,18 @@ public class DatabaseInitializer implements CommandLineRunner {
             t3.setAssigneA(mohamed);
             t3 = tacheRepository.save(t3);
 
-            System.out.println("-> 3 tâches de démonstration créées");
+            // Tâche 4 (Projet 3) : seule tâche du projet, déjà terminée — cohérent
+            // avec le statut TERMINE fixé sur p3 ci-dessus.
+            Tache t4 = new Tache();
+            t4.setNom("Livrer la nouvelle charte graphique et le site vitrine");
+            t4.setDescription("Déploiement final validé par le client, refonte identité visuelle et SEO incluse.");
+            t4.setStatut("TERMINE");
+            t4.setDateLimite(LocalDate.of(2026, 4, 20));
+            t4.setProjet(p3);
+            t4.setAssigneA(djiba);
+            t4 = tacheRepository.save(t4);
+
+            System.out.println("-> 4 tâches de démonstration créées");
 
             // -----------------------------------------------------------------
             // 5. CREATION DES COMMENTAIRES sur les tâches

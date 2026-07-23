@@ -44,7 +44,9 @@ public class ProjetService {
         projet.setNom(request.getNom());
         projet.setDescription(request.getDescription());
         projet.setDateFin(request.getDateFin());
-        projet.setStatut(request.getStatut() != null ? request.getStatut() : "EN_COURS");
+        // Le statut n'est jamais fourni par le client : un projet nait
+        // toujours PLANIFIE (valeur par defaut de l'entite), il ne changera
+        // qu'automatiquement, au gre de ses taches (TacheService).
         projet.setPriorite(request.getPriorite() != null ? request.getPriorite() : "NORMALE");
         projet.setBudget(request.getBudget());
         projet.setCreateur(createur);
@@ -132,7 +134,8 @@ public class ProjetService {
         projet.setNom(request.getNom());
         projet.setDescription(request.getDescription());
         projet.setDateFin(request.getDateFin());
-        if (request.getStatut() != null) projet.setStatut(request.getStatut());
+        // Le statut n'est pas modifiable ici : il reste entierement pilote
+        // par l'avancement des taches (voir TacheService.recalculerStatutProjet).
         if (request.getPriorite() != null) projet.setPriorite(request.getPriorite());
         projet.setBudget(request.getBudget());
 

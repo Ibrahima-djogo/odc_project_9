@@ -199,11 +199,12 @@ export const api = {
    * Crée ou modifie un projet.
    */
   sauvegarderProjet: async (projet) => {
+    // Pas de "statut" ici : il n'est plus jamais envoyé par le client, il est
+    // entièrement calculé côté backend à partir des tâches du projet.
     const body = {
       nom: projet.titre,
       description: projet.description,
       dateFin: projet.dateFin || null,
-      statut: projet.statut || 'EN_COURS',
       priorite: projet.priorite || 'NORMALE',
       budget: projet.budget ? parseFloat(projet.budget) : 0
     };
@@ -216,10 +217,18 @@ export const api = {
       });
       return mapProjetBackVersFront(p);
     } else {
-      // Création
+      // Création : le chef nommé et les membres cochés sont transmis dans le
+      // même appel, pour que le backend les affecte en une seule transaction
+      // (ProjetService.creerProjet) — ne jamais les ré-affecter après coup
+      // séparément, sous peine de doublons/conflits.
+      const bodyCreation = {
+        ...body,
+        chefDeProjetId: projet.chefDeProjetId ? parseInt(projet.chefDeProjetId, 10) : null,
+        membreIdsAffectes: (projet.membreIdsAffectes || []).map(id => parseInt(id, 10))
+      };
       const p = await requete('/projets', {
         method: 'POST',
-        body: JSON.stringify(body)
+        body: JSON.stringify(bodyCreation)
       });
       return mapProjetBackVersFront(p);
     }
@@ -423,7 +432,7 @@ function mapProjetBackVersFront(p) {
     description: p.description || '',
     dateDebut: p.dateCreation ? p.dateCreation.substring(0, 10) : '',
     dateFin: p.dateFin || '',
-    statut: p.statut || 'EN_COURS',
+    statut: p.statut || 'PLANIFIE',
     categorie: p.priorite === 'HAUTE' || p.priorite === 'URGENTE' ? 'Prioritaire' : 'Standard',
     priorite: p.priorite || 'NORMALE',
     budget: p.budget || 0,

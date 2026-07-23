@@ -13,7 +13,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
   const [autreCategorie, setAutreCategorie] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
-  const [statut, setStatut] = useState('EN_COURS');
   const [budget, setBudget] = useState('');
   const [membreIdsAffectes, setMembreIdsAffectes] = useState([]);
   const [chefDeProjetId, setChefDeProjetId] = useState('');
@@ -26,7 +25,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
       setDescription(projetEdite.description || '');
       setDateDebut(projetEdite.dateDebut || '');
       setDateFin(projetEdite.dateFin || '');
-      setStatut(projetEdite.statut || 'EN_COURS');
       setBudget(projetEdite.budget != null ? projetEdite.budget : '');
 
       // Gérer la catégorie
@@ -49,7 +47,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
       setAutreCategorie('');
       setDateDebut('');
       setDateFin('');
-      setStatut('EN_COURS');
       setBudget('');
       setMembreIdsAffectes([]);
     }
@@ -76,7 +73,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
       categorie: categorieFinale,
       dateDebut,
       dateFin,
-      statut,
       budget: budget !== '' ? parseFloat(budget) : null,
       membreIdsAffectes, // Utilisé par App.jsx pour l'association multiple
       chefDeProjetId     // Utilisé pour nommer le chef de projet à la création
@@ -166,13 +162,17 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
                   />
                 </div>
 
+                {/* Le statut n'est plus modifiable à la main : il est entièrement
+                    calculé côté backend à partir de l'avancement des tâches
+                    (PLANIFIE tant qu'aucune n'a démarré, EN_COURS dès qu'une
+                    tâche est en cours, TERMINE seulement quand toutes le sont). */}
                 <div className={estChef ? 'col-12 col-md-8' : 'col-12'}>
                   <label className="form-label fs-7 text-secondary fw-semibold">Statut</label>
-                  <select className="form-select bg-white text-dark border-light-subtle" value={statut} onChange={(e) => setStatut(e.target.value)}>
-                    <option value="EN_COURS">En cours</option>
-                    <option value="PLANIFIE">Planifié</option>
-                    <option value="TERMINE">Terminé</option>
-                  </select>
+                  <div className="form-control bg-light text-secondary border-light-subtle d-flex align-items-center">
+                    {projetEdite
+                      ? (projetEdite.statut || 'PLANIFIE').replace('_', ' ')
+                      : 'Planifié (calculé automatiquement selon les tâches)'}
+                  </div>
                 </div>
 
                 {/* Champ Budget : visible uniquement pour les Chefs de Projet */}
