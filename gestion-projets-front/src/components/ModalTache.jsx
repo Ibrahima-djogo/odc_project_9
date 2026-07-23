@@ -3,7 +3,7 @@ import { MessageSquare, Send } from 'lucide-react';
 
 export default function ModalTache({ tacheEditee, projets, membres, utilisateurConnecte, surFermer, surSauvegarder, surAjouterCommentaire }) {
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChefGlobal = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
+  const estChefGlobal = estAdmin;
 
   // À la création, un simple MEMBRE global ne peut proposer que les projets
   // sur lesquels il est CHEF_PROJET (userHasManagerRights) : le backend

@@ -4,7 +4,6 @@ import { Search, Plus, LogOut, ChevronDown, Menu, Sparkles } from 'lucide-react'
 export default function Navbar({ recherche, setRecherche, surClicNouveauProjet, surClicNouvelleTache, utilisateurConnecte, surDeconnexion, estMobile, surOuvrirSidebar }) {
   const [dropdownOuvert, setDropdownOuvert] = useState(false);
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
 
   // Affiche uniquement le rôle de sécurité global (ADMIN/MEMBRE) : la fonction
   // (Développeur, Designer, Testeur...) est désormais spécifique à chaque
@@ -71,24 +70,29 @@ export default function Navbar({ recherche, setRecherche, surClicNouveauProjet, 
         {/* Groupe de boutons d'action */}
         <div className="d-flex align-items-center gap-2 ms-auto" style={{ zIndex: 999 }}>
 
-          {/* Boutons création : uniquement pour les Chefs de Projet */}
-          {estChef && (
-            <>
-              <button 
-                className={`btn btn-warning text-dark fw-bold d-flex align-items-center gap-2 shadow-sm px-3 text-nowrap ${estMobile ? 'btn-hide-text-mobile btn-sm' : ''}`} 
-                onClick={surClicNouvelleTache}
-              >
-                <Plus size={18} />
-                <span>Nouvelle Tâche</span>
-              </button>
+          {/* Nouvelle Tâche : nécessite d'être Chef d'AU MOINS un projet, mais la
+              Navbar n'a pas le contexte des projets pour le vérifier précisément
+              (pas de rôle par-projet avant que l'utilisateur n'en gère un) —
+              on la réserve donc à l'ADMIN ici ; les chefs d'un projet précis
+              disposent déjà de ce bouton en contexte (Kanban filtré, fiche projet). */}
+          {estAdmin && (
+            <button
+              className={`btn btn-warning text-dark fw-bold d-flex align-items-center gap-2 shadow-sm px-3 text-nowrap ${estMobile ? 'btn-hide-text-mobile btn-sm' : ''}`}
+              onClick={surClicNouvelleTache}
+            >
+              <Plus size={18} />
+              <span>Nouvelle Tâche</span>
+            </button>
+          )}
 
-              {!estMobile && (
-                <button className="btn btn-outline-secondary fw-semibold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={surClicNouveauProjet}>
-                  <Plus size={18} />
-                  <span>Nouveau Projet</span>
-                </button>
-              )}
-            </>
+          {/* Nouveau Projet : ouvert à TOUT utilisateur connecté — aucun rôle
+              par-projet n'existe avant la création, et le créateur devient
+              automatiquement Chef de ce projet précis. */}
+          {!estMobile && (
+            <button className="btn btn-outline-secondary fw-semibold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={surClicNouveauProjet}>
+              <Plus size={18} />
+              <span>Nouveau Projet</span>
+            </button>
           )}
 
           {!estMobile && <div className="vr mx-2 d-none d-sm-block" style={{ height: '24px' }}></div>}

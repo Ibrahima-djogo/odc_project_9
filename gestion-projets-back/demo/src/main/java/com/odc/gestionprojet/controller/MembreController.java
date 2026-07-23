@@ -19,7 +19,7 @@ import java.util.Map;
  *
  * Droits :
  * - GET (lister) : tout utilisateur authentifié
- * - POST/DELETE/PATCH : CHEF_DE_PROJET sur ce projet
+ * - POST/DELETE/PATCH : CHEF_PROJET sur ce projet (rôle par-projet, ou ADMIN)
  *
  * Base URL : /api/projets/{projetId}/membres
  */

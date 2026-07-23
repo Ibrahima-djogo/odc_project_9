@@ -20,7 +20,7 @@ import java.util.List;
  *
  * Droits :
  * - GET : tout utilisateur authentifié
- * - POST/PUT/PATCH/DELETE : CHEF_DE_PROJET sur le projet de la tâche
+ * - POST/PUT/PATCH/DELETE : CHEF_PROJET sur le projet de la tâche (rôle par-projet, ou ADMIN)
  *
  * Base URL : /api/taches
  */

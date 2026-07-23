@@ -23,9 +23,11 @@ import java.util.List;
  *
  * Droits :
  * - GET : tout utilisateur authentifié
- * - POST (créer) : CHEF_DE_PROJET global uniquement
- * - PUT (modifier) : CHEF_DE_PROJET sur ce projet (créateur ou membre chef)
- * - DELETE : CHEF_DE_PROJET sur ce projet (créateur ou membre chef)
+ * - POST (créer) : tout utilisateur authentifié (aucun rôle par-projet
+ *   n'existe avant la création) ; le créateur devient automatiquement
+ *   CHEF_PROJET sur CE projet précis (voir ProjetService.creerProjet)
+ * - PUT (modifier) : CHEF_PROJET sur ce projet (créateur, membre chef, ou ADMIN)
+ * - DELETE : CHEF_PROJET sur ce projet (créateur, membre chef, ou ADMIN)
  *
  * Base URL : /api/projets
  */
@@ -41,12 +43,14 @@ public class ProjetController {
 
     /**
      * POST /api/projets
-     * Crée un nouveau projet. Réservé aux CHEF_DE_PROJET globaux.
+     * Crée un nouveau projet. Ouvert à tout utilisateur authentifié : aucun
+     * rôle par-projet n'existe encore avant la création, donc il n'y a rien
+     * de plus à vérifier ici. Le créateur (ou la personne qu'il désigne comme
+     * chef via chefDeProjetId) devient automatiquement CHEF_PROJET sur ce
+     * projet précis, sans que cela n'affecte son roleGlobal.
      */
     @PostMapping
     public ResponseEntity<ProjetResponse> creerProjet(@Valid @RequestBody ProjetRequest request) {
-        // Seul un chef de projet global peut créer un projet
-        roleCheckService.exigerChefDeProjetGlobal();
         Long createurId = getUtilisateurConnecteId();
         ProjetResponse response = projetService.creerProjet(request, createurId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

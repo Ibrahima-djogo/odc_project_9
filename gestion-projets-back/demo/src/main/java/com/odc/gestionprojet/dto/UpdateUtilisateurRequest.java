@@ -25,7 +25,7 @@ public class UpdateUtilisateurRequest {
     private String email;
 
     /**
-     * Optionnel : nouveau role global ("ADMIN"/"MEMBRE"/"CHEF_DE_PROJET").
+     * Optionnel : nouveau role global ("ADMIN" ou "MEMBRE" uniquement).
      * Le frontend envoie la cle JSON "role" (pas "roleGlobal").
      * Seul un ADMIN est autorise a modifier ce champ (verifie dans le service).
      */

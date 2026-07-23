@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 export default function ModalProjet({ projetEdite, membres = [], surFermer, surSauvegarder, utilisateurConnecte }) {
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  // Chef au niveau global, OU chef spécifiquement sur CE projet (userHasManagerRights,
-  // calculé côté backend) — un simple MEMBRE peut être CHEF_PROJET d'un projet précis.
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET' || projetEdite?.userHasManagerRights === true;
+  // À la création (projetEdite absent), n'importe quel utilisateur devient
+  // automatiquement Chef du projet qu'il crée : le formulaire complet (budget,
+  // nomination du chef) lui est donc ouvert. En modification, seul l'ADMIN ou
+  // le Chef de CE projet précis (userHasManagerRights, calculé côté backend) y a accès.
+  const estChef = !projetEdite || estAdmin || projetEdite?.userHasManagerRights === true;
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [categorie, setCategorie] = useState('Web App');

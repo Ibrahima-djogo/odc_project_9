@@ -44,7 +44,7 @@ public class UtilisateurController {
      * GET /api/utilisateurs
      * Retourne la liste des collaborateurs visibles par l'utilisateur connecté :
      * - ADMIN : tous les utilisateurs de la plateforme.
-     * - MEMBRE / CHEF_DE_PROJET : uniquement lui-même et les personnes avec
+     * - MEMBRE : uniquement lui-même et les personnes avec
      *   qui il partage au moins un projet (confidentialité des comptes).
      */
     @GetMapping

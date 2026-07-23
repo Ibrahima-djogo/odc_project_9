@@ -54,7 +54,7 @@ public class Utilisateur {
 
     /**
      * Rôle global de l'utilisateur dans l'application.
-     * Valeurs possibles : "CHEF_DE_PROJET", "MEMBRE"
+     * Valeurs possibles : "ADMIN", "MEMBRE" (uniquement ces deux-là).
      * Distinct du rôle dans membres_projet qui est spécifique à un projet.
      */
     @Column(name = "role_global", nullable = false, length = 30)

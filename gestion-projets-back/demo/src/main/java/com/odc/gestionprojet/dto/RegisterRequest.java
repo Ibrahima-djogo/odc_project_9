@@ -35,7 +35,10 @@ public class RegisterRequest {
     private String motDePasse;
 
     /**
-     * Rôle global : "ADMIN", "CHEF_DE_PROJET" ou "MEMBRE". Par défaut "MEMBRE".
+     * Rôle global : "ADMIN" ou "MEMBRE". Par défaut "MEMBRE".
+     * Ignoré par UtilisateurService.creerUtilisateur (toujours MEMBRE à la
+     * création) ; utilisé uniquement par AuthService.register pour le
+     * bootstrap du tout premier compte ADMIN d'une instance vierge.
      */
     @JsonAlias("role")
     private String roleGlobal = "MEMBRE";

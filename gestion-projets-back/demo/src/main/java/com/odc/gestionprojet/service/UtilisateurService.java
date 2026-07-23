@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class UtilisateurService {
 
+    private static final java.util.Set<String> ROLES_GLOBAUX_AUTORISES = java.util.Set.of("ADMIN", "MEMBRE");
+
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleCheckService roleCheckService;
@@ -35,7 +37,7 @@ public class UtilisateurService {
     /**
      * Retourne la liste des utilisateurs visibles par l'utilisateur connecte.
      * - ADMIN : voit tous les utilisateurs de la plateforme.
-     * - MEMBRE / CHEF_DE_PROJET : ne voit que lui-meme et les collaborateurs
+     * - MEMBRE : ne voit que lui-meme et les collaborateurs
      *   avec qui il partage au moins un projet (confidentialite : on ne
      *   doit pas pouvoir lister tous les comptes de la plateforme).
      */
@@ -64,6 +66,11 @@ public class UtilisateurService {
      * genere pas de token JWT : l'admin cree un compte pour quelqu'un d'autre, pas pour
      * lui-meme. Le controle d'acces (reserve a l'ADMIN) est fait en amont, dans le
      * controller, avant l'appel a cette methode.
+     *
+     * Le roleGlobal envoye par le client est TOUJOURS ignore : un compte est
+     * systematiquement cree MEMBRE, quel que soit le contenu de la requete
+     * (meme si l'appelant est deja ADMIN). La promotion ADMIN se fait apres
+     * coup, explicitement, via mettreAJourUtilisateur.
      */
     public UtilisateurResponse creerUtilisateur(RegisterRequest request) {
         Objects.requireNonNull(request, "request must not be null");
@@ -80,9 +87,7 @@ public class UtilisateurService {
         // Mot de passe hache exactement comme lors de l'inscription publique
         // (AuthService.register) : jamais stocke en clair.
         utilisateur.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
-        utilisateur.setRoleGlobal(
-                request.getRoleGlobal() != null && !request.getRoleGlobal().isBlank()
-                        ? request.getRoleGlobal() : "MEMBRE");
+        utilisateur.setRoleGlobal("MEMBRE");
 
         Utilisateur sauvegarde = utilisateurRepository.saveAndFlush(utilisateur);
         return toResponse(sauvegarde);
@@ -115,7 +120,13 @@ public class UtilisateurService {
                 throw new AccessDeniedException(
                         "Seul un administrateur peut modifier le role global d'un utilisateur.");
             }
-            utilisateur.setRoleGlobal(request.getRoleGlobal().trim());
+            String roleDemande = request.getRoleGlobal().trim().toUpperCase();
+            if (!ROLES_GLOBAUX_AUTORISES.contains(roleDemande)) {
+                throw new IllegalArgumentException(
+                        "roleGlobal invalide : " + request.getRoleGlobal() +
+                                ". Valeurs acceptees : " + ROLES_GLOBAUX_AUTORISES);
+            }
+            utilisateur.setRoleGlobal(roleDemande);
         }
 
         // saveAndFlush force l'ecriture immediate en base (au lieu d'attendre

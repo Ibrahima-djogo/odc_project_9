@@ -14,22 +14,22 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Service utilitaire centralisant les vérifications de droits d'accès.
  *
- * Trois niveaux de contrôle :
- * 1. ADMIN (roleGlobal) : super-utilisateur, outrepasse systématiquement les deux niveaux suivants.
- * 2. Niveau global (roleGlobal) : CHEF_DE_PROJET ou MEMBRE
- * 3. Niveau projet (rôle dans membres_projet) : CHEF_PROJET sur ce projet précis
+ * Deux niveaux de contrôle, jamais confondus :
+ * 1. roleGlobal (table utilisateurs) : uniquement "ADMIN" ou "MEMBRE". L'ADMIN
+ *    est un super-utilisateur qui outrepasse systématiquement le niveau projet.
+ * 2. Niveau projet (MembreProjet.roleProjet, table membres_projet) : la
+ *    valeur "CHEF_PROJET" y désigne le pilote d'UN projet précis. Un MEMBRE
+ *    global peut être CHEF_PROJET sur un projet et simple membre sur un autre.
  *
- * Attention : le rôle "chef de projet" est stocké différemment selon le niveau :
- * - roleGlobal (table utilisateurs) utilise la valeur "CHEF_DE_PROJET"
- * - MembreProjet.role (table membres_projet) utilise la valeur "CHEF_PROJET"
- * Ne pas confondre les deux littéraux lors de futures évolutions.
+ * Il n'existe plus de rôle "chef de projet" au niveau global : n'importe quel
+ * utilisateur connecté peut créer un projet (voir ProjetController) et en
+ * devient alors automatiquement CHEF_PROJET sur CE projet précis.
  */
 @Service
 @RequiredArgsConstructor
 public class RoleCheckService {
 
     private static final String ROLE_GLOBAL_ADMIN = "ADMIN";
-    private static final String ROLE_GLOBAL_CHEF_DE_PROJET = "CHEF_DE_PROJET";
     private static final String ROLE_PROJET_CHEF_PROJET = "CHEF_PROJET";
 
     private final UtilisateurRepository utilisateurRepository;
@@ -55,21 +55,6 @@ public class RoleCheckService {
      */
     public boolean estAdminConnecte() {
         return estAdmin(getUtilisateurConnecte());
-    }
-
-    /**
-     * Vérifie que l'utilisateur connecté peut créer/gérer des projets au niveau
-     * global : ADMIN (tous droits) ou CHEF_DE_PROJET. Lève 403 sinon.
-     */
-    public void exigerChefDeProjetGlobal() {
-        Utilisateur u = getUtilisateurConnecte();
-        if (estAdmin(u)) {
-            return;
-        }
-        if (!ROLE_GLOBAL_CHEF_DE_PROJET.equals(u.getRoleGlobal())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Action réservée aux Chefs de Projet.");
-        }
     }
 
     /**
@@ -103,13 +88,5 @@ public class RoleCheckService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Action réservée au Chef de Projet de ce projet.");
         }
-    }
-
-    /**
-     * Retourne true si l'utilisateur connecté est globalement ADMIN ou CHEF_DE_PROJET.
-     */
-    public boolean estChefDeProjetGlobal() {
-        Utilisateur u = getUtilisateurConnecte();
-        return estAdmin(u) || ROLE_GLOBAL_CHEF_DE_PROJET.equals(u.getRoleGlobal());
     }
 }

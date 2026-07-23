@@ -289,7 +289,10 @@ function App() {
       // Si un chefDeProjetId a été spécifié (à la création), on s'assure qu'il est ajouté
       if (!isEdition && projet.chefDeProjetId) {
         if (String(projet.chefDeProjetId) !== String(utilisateurConnecte.id)) {
-          await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(projet.chefDeProjetId), 'CHEF_DE_PROJET');
+          // 'CHEF_PROJET' est le rôle PAR PROJET (table membres_projet), à ne
+          // pas confondre avec un rôle global : c'est la valeur que backend
+          // reconnaît pour accorder les droits de gestion sur CE projet précis.
+          await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(projet.chefDeProjetId), 'CHEF_PROJET');
         }
       }
 
@@ -307,7 +310,7 @@ function App() {
           if (!idsActuels.includes(targetId)) {
             // Tous les membres ajoutés en lot via la liste sont désormais des MEMBRES,
             // sauf s'il s'agit du chef de projet explicitement nommé à l'instant.
-            const roleBackend = (String(targetId) === String(projet.chefDeProjetId)) ? 'CHEF_DE_PROJET' : 'MEMBRE';
+            const roleBackend = (String(targetId) === String(projet.chefDeProjetId)) ? 'CHEF_PROJET' : 'MEMBRE';
             
             // On évite de rajouter en double le chef de projet si on vient de le faire ci-dessus
             if (roleBackend === 'MEMBRE' || isEdition) {
@@ -460,7 +463,9 @@ function App() {
       let utilisateurId = membre.id;
       const estNouveau = !membre.id || membre.id.startsWith('m_');
 
-      // roleGlobal (ADMIN/CHEF_DE_PROJET/MEMBRE) est un choix explicite
+      // roleGlobal (ADMIN/MEMBRE) n'est un choix explicite qu'en modification
+      // d'un membre existant (ModalMembre masque le sélecteur à la création) ;
+      // le backend force de toute façon MEMBRE pour tout nouveau compte.
       const roleGlobal = membre.roleGlobal || 'MEMBRE';
 
       if (estNouveau) {
@@ -725,9 +730,9 @@ function App() {
             />
           )}
 
-          {/* Export : accessible aux ADMIN, SUPER_ADMIN et CHEF_DE_PROJET */}
+          {/* Export : réservé aux administrateurs globaux (ADMIN/SUPER_ADMIN) */}
           {vueActive === 'export' && (
-            (utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN' || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET')
+            (utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN')
               ? <ServiceExport projets={projets} taches={taches} membres={membres} />
               : (
                 <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
@@ -735,7 +740,7 @@ function App() {
                     <div className="fs-1 mb-3 text-danger"><i className="bi bi-lock-fill"></i></div>
                     <h2 className="h4 fw-bold text-danger mb-2">Accès refusé</h2>
                     <p className="text-secondary mb-0">
-                      La section <strong>Export BDD</strong> est réservée aux <strong>Administrateurs et Chefs de Projet</strong>.
+                      La section <strong>Export BDD</strong> est réservée aux <strong>Administrateurs</strong>.
                       Contactez votre responsable si vous avez besoin d'un export.
                     </p>
                   </div>

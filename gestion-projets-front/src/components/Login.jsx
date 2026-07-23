@@ -21,7 +21,6 @@ export default function Login({ surConnexion }) {
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
-  const [roleGlobal, setRoleGlobal] = useState('MEMBRE');
 
   // Gestion d'avatar (Stocké dans le state de session pour le design)
   const [typeAvatar, setTypeAvatar] = useState('initials'); // 'gravatar' | 'initials' | 'predefini' | 'custom'
@@ -86,14 +85,15 @@ export default function Login({ surConnexion }) {
     }
 
     try {
-      // Inscription publique : le rôle choisi (ADMIN, CHEF_DE_PROJET ou MEMBRE) est transmis.
-      // Le token JWT est stocké automatiquement par api.register().
+      // Inscription publique : le rôle global n'est jamais choisi ici, un
+      // compte créé depuis ce formulaire est toujours MEMBRE (le backend
+      // l'impose de toute façon, quoi qu'on envoie). Le token JWT est stocké
+      // automatiquement par api.register().
       await api.register(
         nom.trim(),
         prenom.trim(),
         email.trim().toLowerCase(),
-        motDePasse,
-        roleGlobal
+        motDePasse
       );
 
       // surConnexion(true) charge le profil réel depuis /api/utilisateurs/moi
@@ -276,28 +276,16 @@ export default function Login({ surConnexion }) {
                 </div>
               </div>
 
-              {/* Sélection du rôle de sécurité global */}
-              <div className="mb-3">
-                <label className="form-label fs-7 text-secondary fw-semibold">Rôle de sécurité *</label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-light-subtle text-secondary"><Shield size={16} /></span>
-                  <select 
-                    className="form-select bg-light border-light-subtle text-dark fs-7"
-                    value={roleGlobal}
-                    onChange={(e) => setRoleGlobal(e.target.value)}
-                    required
-                  >
-                    <option value="MEMBRE">Membre standard</option>
-                    <option value="ADMIN">Administrateur (Accès total)</option>
-                    <option value="CHEF_DE_PROJET">Chef de Projet global</option>
-                  </select>
-                </div>
-              </div>
-
+              {/* Aucune sélection de rôle à l'inscription : un compte créé ici est
+                  toujours un compte Membre standard. Le rôle Administrateur et les
+                  fonctions par projet (Développeur, Designer, Testeur...) se
+                  décident ensuite, depuis l'espace d'administration, une fois la
+                  personne affectée à un projet. */}
               <div className="mb-3 p-3 bg-light rounded-3 border border-light-subtle fs-8 text-secondary d-flex align-items-center gap-2">
                 <Shield size={16} className="text-warning flex-shrink-0" />
                 <span>
-                  Le rôle sélectionné détermine vos privilèges globaux. L'Administrateur a accès à l'ensemble du système et des projets.
+                  Un compte créé ici est toujours un compte Membre standard. Les rôles Administrateur et les fonctions par projet
+                  (Développeur, Designer, Testeur...) sont attribués depuis l'espace d'administration, une fois affecté à un projet.
                 </span>
               </div>
 

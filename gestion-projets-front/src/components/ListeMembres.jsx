@@ -8,7 +8,7 @@ export default function ListeMembres({ membres, projets, taches, surSauvegarderM
   const [projetFiltre, setProjetFiltre] = useState('');
 
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
+  const estChef = estAdmin;
 
   const ouvrirModal = (membre = null) => {
     setMembreEdite(membre);

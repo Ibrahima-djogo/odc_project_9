@@ -184,21 +184,26 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                   </div>
                 )}
 
-                <div className="col-md-6">
-                  <label className="form-label fs-7 text-secondary fw-semibold">Rôle de sécurité</label>
-                  <select
-                    className="form-select bg-white text-dark border-light-subtle"
-                    value={roleGlobal}
-                    onChange={(e) => setRoleGlobal(e.target.value)}
-                  >
-                    <option value="MEMBRE">Membre</option>
-                    <option value="ADMIN">Administrateur</option>
-                    <option value="CHEF_DE_PROJET">Chef de Projet</option>
-                  </select>
-                  <div className="form-text fs-8">
-                    Détermine les droits globaux (Admin = accès à tout). Indépendant de sa fonction par projet ci-dessous.
+                {/* Rôle de sécurité global : uniquement modifiable sur un membre déjà
+                    existant, jamais à la création. Un nouveau compte est toujours créé
+                    MEMBRE (le backend l'impose de toute façon) ; la promotion ADMIN se
+                    décide ensuite, séparément, par un administrateur. */}
+                {membreEdite && (
+                  <div className="col-md-6">
+                    <label className="form-label fs-7 text-secondary fw-semibold">Rôle de sécurité</label>
+                    <select
+                      className="form-select bg-white text-dark border-light-subtle"
+                      value={roleGlobal}
+                      onChange={(e) => setRoleGlobal(e.target.value)}
+                    >
+                      <option value="MEMBRE">Membre</option>
+                      <option value="ADMIN">Administrateur</option>
+                    </select>
+                    <div className="form-text fs-8">
+                      Détermine les droits globaux (Admin = accès à tout). Indépendant de sa fonction par projet ci-dessous.
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Section Affectation à Plusieurs Projets, avec fonction par projet */}
                 <div className="col-12 mt-2">

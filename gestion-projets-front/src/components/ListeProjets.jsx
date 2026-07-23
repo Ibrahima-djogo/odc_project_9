@@ -2,33 +2,22 @@ import React from 'react';
 import { Plus, Calendar, Edit3, Trash2, ArrowRight, DollarSign, Users } from 'lucide-react';
 
 export default function ListeProjets({ projets, taches, surOuvrirModal, surSupprimerProjet, setVueActive, setProjetFiltreId, setProjetDetailId, utilisateurConnecte }) {
-  // Droits de gestion GLOBAUX : ADMIN/SUPER_ADMIN, ou CHEF_DE_PROJET au niveau
-  // du compte. Ce niveau conditionne la création de NOUVEAUX projets (un rôle
-  // par projet n'existe pas encore avant leur création).
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
-
-  // Un utilisateur globalement MEMBRE peut malgré tout être CHEF_PROJET sur un
-  // ou plusieurs projets précis (membres_projet.role_projet) — le backend le
-  // signale via userHasManagerRights sur chaque ProjetResponse.
-  const gereAuMoinsUnProjet = projets.some(p => p.userHasManagerRights === true);
 
   return (
     <div>
       <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
         <div>
           <h1 className="h3 fw-bold text-dark mb-1">Gestion des Projets</h1>
-          <p className="text-secondary mb-0">
-            {(estChef || gereAuMoinsUnProjet) ? 'Créez et suivez vos projets d\'équipe' : 'Consultez les projets de l\'équipe (lecture seule)'}
-          </p>
+          <p className="text-secondary mb-0">Créez et suivez vos projets d'équipe</p>
         </div>
-        {/* Bouton "Nouveau Projet" : création d'un projet requiert le droit global (aucun rôle par-projet n'existe encore) */}
-        {estChef && (
-          <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm text-nowrap" onClick={() => surOuvrirModal(null)}>
-            <Plus size={18} />
-            <span>Nouveau Projet</span>
-          </button>
-        )}
+        {/* Bouton "Nouveau Projet" : ouvert à TOUT utilisateur connecté — aucun
+            rôle par-projet n'existe avant la création, le créateur devient
+            automatiquement Chef de ce projet précis. */}
+        <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm text-nowrap" onClick={() => surOuvrirModal(null)}>
+          <Plus size={18} />
+          <span>Nouveau Projet</span>
+        </button>
       </div>
 
       <div className="row g-4">
@@ -45,8 +34,8 @@ export default function ListeProjets({ projets, taches, surOuvrirModal, surSuppr
                     <span className="badge bg-warning-subtle text-dark border border-warning-subtle px-3 py-2 fs-8 fw-semibold">
                       {projet.categorie || 'Projet'}
                     </span>
-                    {/* Boutons Modifier / Supprimer : ADMIN, chef global, ou chef de CE projet précis */}
-                    {(estChef || projet.userHasManagerRights === true) && (
+                    {/* Boutons Modifier / Supprimer : ADMIN, ou chef de CE projet précis */}
+                    {(estAdmin || projet.userHasManagerRights === true) && (
                       <div className="d-flex gap-1">
                         <button className="btn btn-sm btn-link text-secondary p-1" onClick={() => surOuvrirModal(projet)} title="Modifier le projet">
                           <Edit3 size={16} />

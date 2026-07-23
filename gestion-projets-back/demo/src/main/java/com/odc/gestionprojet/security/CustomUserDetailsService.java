@@ -35,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Aucun utilisateur trouve avec l'email : " + email));
 
-        // roleGlobal ("ADMIN", "CHEF_DE_PROJET" ou "MEMBRE") devient une
+        // roleGlobal ("ADMIN" ou "MEMBRE") devient une
         // GrantedAuthority "ROLE_xxx", ce qui permet d'utiliser
         // @PreAuthorize("hasRole('ADMIN')") sur les endpoints qui en ont besoin.
         // Les controles plus fins (droits par projet/tache) restent geres

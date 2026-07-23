@@ -3,7 +3,7 @@ import { Plus, CheckSquare, Clock, AlertCircle, MessageSquare, Trash2 } from 'lu
 
 export default function TableauKanban({ taches, projets, membres, projetFiltreId, setProjetFiltreId, surOuvrirModal, surSupprimerTache, surChangerStatut, utilisateurConnecte }) {
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
+  const estChef = estAdmin;
 
   // Un utilisateur globalement MEMBRE peut être CHEF_PROJET sur un projet
   // précis (userHasManagerRights, calculé côté backend) : il doit alors avoir

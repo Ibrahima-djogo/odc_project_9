@@ -147,7 +147,7 @@ public class GlobalExceptionHandler {
 
         /**
          * 4xx/5xx - Exceptions volontairement levees via ResponseStatusException
-         * (ex: RoleCheckService.exigerChefDeProjetGlobal / exigerChefDeProjetSurProjet).
+         * (ex: RoleCheckService.exigerChefDeProjetSurProjet).
          * Sans ce handler, Spring les traite via son resolveur par defaut et le
          * corps de reponse n'a pas le meme format JSON que le reste de l'API.
          */

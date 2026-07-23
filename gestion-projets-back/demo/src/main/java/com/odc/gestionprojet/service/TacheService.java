@@ -66,6 +66,7 @@ public class TacheService {
         }
 
         Tache sauvegarde = tacheRepository.save(tache);
+        recalculerStatutProjet(projet.getId());
         return toResponse(sauvegarde);
     }
 
@@ -151,6 +152,7 @@ public class TacheService {
         }
 
         Tache mis_a_jour = tacheRepository.save(tache);
+        recalculerStatutProjet(mis_a_jour.getProjet().getId());
         return toResponse(mis_a_jour);
     }
 
@@ -174,6 +176,7 @@ public class TacheService {
 
         tache.setStatut(request.getStatut());
         Tache mis_a_jour = tacheRepository.save(tache);
+        recalculerStatutProjet(mis_a_jour.getProjet().getId());
         return toResponse(mis_a_jour);
     }
 
@@ -182,10 +185,40 @@ public class TacheService {
      */
     public void supprimerTache(Long tacheId) {
         Objects.requireNonNull(tacheId, "tacheId must not be null");
-        if (!tacheRepository.existsById(tacheId)) {
-            throw new ResourceNotFoundException("Tache", tacheId);
+        Tache tache = tacheRepository.findById(tacheId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tache", tacheId));
+        Long projetId = tache.getProjet().getId();
+        tacheRepository.delete(tache);
+        recalculerStatutProjet(projetId);
+    }
+
+    /**
+     * Recalcule automatiquement le statut d'un projet en fonction de ses
+     * taches : passe a TERMINE des que la derniere tache active se termine,
+     * et repasse a EN_COURS si une tache redevient active alors que le projet
+     * etait marque TERMINE. Ne touche jamais un projet sans aucune tache, ni
+     * un projet EN_PAUSE dont toutes les taches ne sont pas terminees (un
+     * statut EN_PAUSE reste une decision manuelle tant que ce n'est pas fini).
+     */
+    private void recalculerStatutProjet(Long projetId) {
+        Projet projet = projetRepository.findById(projetId).orElse(null);
+        if (projet == null) {
+            return;
         }
-        tacheRepository.deleteById(tacheId);
+        List<Tache> tachesProjet = tacheRepository.findByProjetId(projetId);
+        if (tachesProjet.isEmpty()) {
+            return;
+        }
+        boolean toutesTerminees = tachesProjet.stream()
+                .allMatch(t -> "TERMINE".equals(t.getStatut()));
+
+        if (toutesTerminees && !"TERMINE".equals(projet.getStatut())) {
+            projet.setStatut("TERMINE");
+            projetRepository.save(projet);
+        } else if (!toutesTerminees && "TERMINE".equals(projet.getStatut())) {
+            projet.setStatut("EN_COURS");
+            projetRepository.save(projet);
+        }
     }
 
     // =========================================================================

@@ -3,7 +3,9 @@ import { LayoutDashboard, FolderKanban, CheckSquare, Users, Sparkles, ChevronLef
 
 export default function Sidebar({ vueActive, setVueActive, estReduit, setEstReduit, surDeconnexion, utilisateurConnecte, estMobile, sidebarMobileOuverte }) {
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
-  const estChef = estAdmin || utilisateurConnecte?.roleGlobal === 'CHEF_DE_PROJET';
+  // Export BDD : réservé aux administrateurs globaux (pas de rôle par-projet
+  // pertinent pour une exportation qui couvre toute la base).
+  const estChef = estAdmin;
 
   // Affiche uniquement le rôle de sécurité global (ADMIN/MEMBRE) : la fonction
   // (Développeur, Designer, Testeur...) est désormais spécifique à chaque
