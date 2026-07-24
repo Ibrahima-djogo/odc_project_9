@@ -29,6 +29,7 @@ public class ProjetService {
     private final ProjetRepository projetRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final MembreProjetRepository membreProjetRepository;
+    private final EmailService emailService;
 
     /**
      * Cree un nouveau projet pour l'utilisateur connecte.
@@ -65,6 +66,12 @@ public class ProjetService {
         membreChef.setUtilisateur(chef);
         membreChef.setRoleProjet("CHEF_PROJET");
         membreProjetRepository.save(membreChef);
+        // Ne notifier le créateur que s'il a nommé quelqu'un d'autre que
+        // lui-même comme chef (inutile de s'auto-notifier).
+        if (!Objects.equals(chefId, createurId)) {
+            emailService.envoyerNotificationAffectationProjet(
+                    chef.getEmail(), chef.getPrenom(), sauvegarde.getNom(), "CHEF_PROJET");
+        }
 
         // 2. Ajouter les membres supplémentaires (si fournis)
         List<Long> idsMembres = request.getMembreIdsAffectes();
@@ -79,6 +86,8 @@ public class ProjetService {
                 mp.setUtilisateur(utilisateur);
                 mp.setRoleProjet("MEMBRE");
                 membreProjetRepository.save(mp);
+                emailService.envoyerNotificationAffectationProjet(
+                        utilisateur.getEmail(), utilisateur.getPrenom(), sauvegarde.getNom(), "MEMBRE");
             }
         }
 

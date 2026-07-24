@@ -29,6 +29,7 @@ public class MembreService {
     private final MembreProjetRepository membreProjetRepository;
     private final ProjetRepository projetRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final EmailService emailService;
 
     /**
      * Ajoute un utilisateur comme membre d'un projet.
@@ -56,6 +57,14 @@ public class MembreService {
         membre.setRoleProjet(request.getRoleProjet() != null ? request.getRoleProjet() : "MEMBRE");
 
         MembreProjet sauvegarde = membreProjetRepository.save(membre);
+
+        // Notification par e-mail : asynchrone (EmailService), ne bloque pas
+        // la reponse HTTP et n'echoue jamais l'affectation elle-meme si le
+        // SMTP est indisponible.
+        emailService.envoyerNotificationAffectationProjet(
+                utilisateur.getEmail(), utilisateur.getPrenom(),
+                projet.getNom(), sauvegarde.getRoleProjet());
+
         return toResponse(sauvegarde);
     }
 

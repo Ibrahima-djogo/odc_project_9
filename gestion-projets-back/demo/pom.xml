@@ -50,6 +50,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Mail : envoi de vrais e-mails SMTP (notifications d'affectation
+             a un projet), via JavaMailSender -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Driver MariaDB : permet à Spring Boot de parler avec MariaDB -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
