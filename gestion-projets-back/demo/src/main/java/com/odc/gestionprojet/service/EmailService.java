@@ -63,6 +63,103 @@ public class EmailService {
         }
     }
 
+    /**
+     * Envoie une invitation a rejoindre un projet par e-mail, que le
+     * destinataire ait deja un compte WorkPulse ou non. Le lien pointe vers
+     * le frontend avec le token en clair en parametre ("?invite=token") : le
+     * frontend l'echange ensuite contre l'apercu public (GET /api/invitations/{token})
+     * puis, une fois l'utilisateur connecte/inscrit, contre l'acceptation
+     * (POST /api/invitations/{token}/accepter).
+     *
+     * @param emailDestinataire adresse invitee
+     * @param nomProjet         projet concerne
+     * @param roleProjet        fonction proposee sur ce projet
+     * @param nomInviteur       nom de la personne qui invite (chef de projet ou admin)
+     * @param token             token EN CLAIR (jamais persiste ainsi, seul son hash l'est)
+     */
+    @Async
+    public void envoyerInvitationProjet(String emailDestinataire, String nomProjet, String roleProjet,
+                                         String nomInviteur, String token) {
+        try {
+            String lien = urlFrontend + "/?invite=" + token;
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+            helper.setFrom(adresseExpediteur);
+            helper.setTo(emailDestinataire);
+            helper.setSubject(nomInviteur + " vous invite à rejoindre \"" + nomProjet + "\" sur WorkPulse");
+            helper.setText(construireContenuInvitationHtml(nomProjet, roleProjet, nomInviteur, lien), true);
+
+            mailSender.send(message);
+            log.info("E-mail d'invitation envoye a {} (projet '{}')", emailDestinataire, nomProjet);
+        } catch (MessagingException | MailException e) {
+            log.error("Echec de l'envoi de l'e-mail d'invitation a {} (projet '{}') : {}",
+                    emailDestinataire, nomProjet, e.getMessage());
+        }
+    }
+
+    private String construireContenuInvitationHtml(String nomProjet, String roleProjet, String nomInviteur, String lien) {
+        String roleAffiche = (roleProjet == null || roleProjet.isBlank())
+                ? "Membre"
+                : roleProjet.replace('_', ' ');
+
+        return """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:'Segoe UI',Arial,sans-serif;">
+                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="padding:32px 0;">
+                    <tr>
+                      <td align="center">
+                        <table role="presentation" width="480" cellpadding="0" cellspacing="0"
+                               style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(15,23,42,0.08);">
+                          <tr>
+                            <td style="background:#ffb800;padding:24px 32px;text-align:center;">
+                              <span style="font-size:22px;font-weight:700;color:#0f172a;">WorkPulse</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:32px;">
+                              <p style="font-size:16px;color:#0f172a;margin:0 0 16px;">Bonjour,</p>
+                              <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 16px;">
+                                <strong style="color:#0f172a;">%s</strong> vous invite à rejoindre le projet
+                                <strong style="color:#0f172a;">%s</strong> sur WorkPulse,
+                                en tant que <strong style="color:#0f172a;">%s</strong>.
+                              </p>
+                              <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 24px;">
+                                Si vous avez déjà un compte, connectez-vous pour rejoindre le projet en un clic.
+                                Sinon, ce lien vous guidera vers une inscription rapide.
+                              </p>
+                              <table role="presentation" cellpadding="0" cellspacing="0">
+                                <tr>
+                                  <td style="border-radius:8px;background:#ffb800;">
+                                    <a href="%s" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:700;color:#0f172a;text-decoration:none;">
+                                      Accepter l'invitation
+                                    </a>
+                                  </td>
+                                </tr>
+                              </table>
+                              <p style="font-size:12px;color:#94a3b8;line-height:1.6;margin:24px 0 0;">
+                                Ce lien expire dans 7 jours.
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:16px 32px;background:#f8fafc;text-align:center;">
+                              <span style="font-size:12px;color:#94a3b8;">
+                                Vous recevez cet e-mail suite à une invitation explicite sur WorkPulse.
+                                Si vous ne vous y attendiez pas, ignorez simplement ce message.
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+                </html>
+                """.formatted(nomInviteur, nomProjet, roleAffiche, lien);
+    }
+
     private String construireContenuHtml(String prenom, String nomProjet, String roleProjet) {
         String roleAffiche = (roleProjet == null || roleProjet.isBlank())
                 ? "Membre"

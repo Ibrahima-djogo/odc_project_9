@@ -106,9 +106,10 @@ public class TacheController {
     /**
      * PATCH /api/taches/{id}/statut
      * Met a jour uniquement le statut d'une tâche.
-     * Autorisé pour : le chef du projet (ou ADMIN), OU le membre auquel
-     * la tâche est assignée (qui ne peut faire évoluer que le statut de
-     * ses propres tâches).
+     * Modèle "Trello" : autorisé pour le chef du projet (ou ADMIN), OU
+     * n'importe quel membre du projet (pas seulement l'assigné de cette
+     * tâche précise) — seule la création/édition des détails/suppression
+     * reste réservée au chef.
      * Corps : { "statut": "EN_COURS" }
      */
     @PatchMapping("/{id}/statut")
@@ -121,10 +122,11 @@ public class TacheController {
         Long utilisateurConnecteId = roleCheckService.getUtilisateurConnecte().getId();
         boolean estAssigne = utilisateurConnecteId.equals(tache.getAssigneAId());
         boolean estChefOuAdmin = roleCheckService.estChefOuAdminSurProjet(tache.getProjetId());
+        boolean estMembreDuProjet = roleCheckService.estMembreDuProjet(tache.getProjetId(), utilisateurConnecteId);
 
-        if (!estAssigne && !estChefOuAdmin) {
+        if (!estAssigne && !estChefOuAdmin && !estMembreDuProjet) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Vous ne pouvez modifier le statut que de vos propres tâches assignées.");
+                    "Vous devez être membre de ce projet pour modifier le statut de ses tâches.");
         }
 
         TacheResponse response = tacheService.changerStatut(id, request);

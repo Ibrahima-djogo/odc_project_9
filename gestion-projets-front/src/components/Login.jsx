@@ -7,15 +7,19 @@ import { api } from '../services/api';
  * Composant de connexion et d'inscription.
  * Permet d'authentifier les utilisateurs auprès du serveur Spring Boot
  * et de stocker le token JWT correspondant.
+ *
+ * @param {string|null} inviteToken - présent si l'utilisateur arrive via un
+ *   lien d'invitation (`?invite=TOKEN` dans l'URL, lu par App.jsx). Affiche
+ *   un aperçu de l'invitation et verrouille l'e-mail sur l'adresse invitée.
  */
-export default function Login({ surConnexion }) {
+export default function Login({ surConnexion, inviteToken }) {
   // Mode de l'écran : Inscription vs Connexion
   const [estInscription, setEstInscription] = useState(false);
-  
+
   // States pour la connexion manuelle
   const [emailConnexion, setEmailConnexion] = useState('');
   const [passwordConnexion, setPasswordConnexion] = useState('');
-  
+
   // States pour l'inscription d'un nouveau collaborateur
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
@@ -26,9 +30,39 @@ export default function Login({ surConnexion }) {
   const [typeAvatar, setTypeAvatar] = useState('initials'); // 'gravatar' | 'initials' | 'predefini' | 'custom'
   const [avatarPredefiniUrl, setAvatarPredefiniUrl] = useState(AVATARS_PREDEFINIS[0].url);
   const [avatarCustomUrl, setAvatarCustomUrl] = useState('');
-  
+
   // Message d'erreur d'API
   const [erreur, setErreur] = useState('');
+
+  // Aperçu public de l'invitation (si inviteToken est présent dans l'URL)
+  const [apercuInvitation, setApercuInvitation] = useState(null);
+  const [chargementApercu, setChargementApercu] = useState(!!inviteToken);
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    let annule = false;
+    setChargementApercu(true);
+    api.obtenirApercuInvitation(inviteToken)
+      .then(apercu => {
+        if (annule) return;
+        setApercuInvitation(apercu);
+        if (apercu.valide) {
+          // Email verrouillé sur l'adresse invitée, dans les deux formulaires.
+          setEmail(apercu.email);
+          setEmailConnexion(apercu.email);
+          // Par défaut on présente l'inscription (cas le plus fréquent d'une
+          // invitation), l'utilisateur peut toujours basculer sur "Se connecter".
+          setEstInscription(true);
+        }
+      })
+      .catch(() => {
+        if (!annule) setApercuInvitation({ valide: false, motifInvalide: "Impossible de vérifier cette invitation." });
+      })
+      .finally(() => {
+        if (!annule) setChargementApercu(false);
+      });
+    return () => { annule = true; };
+  }, [inviteToken]);
 
   // Calcule l'URL de l'avatar choisi par l'utilisateur
   const obtenirAvatarUrlFinal = () => {
@@ -154,6 +188,29 @@ export default function Login({ surConnexion }) {
             </div>
           )}
 
+          {/* Bannière d'invitation : affichée uniquement si l'URL contient ?invite=TOKEN */}
+          {inviteToken && chargementApercu && (
+            <div className="alert alert-secondary fs-7 py-2 px-3 mb-4 rounded-3">
+              Vérification de votre invitation...
+            </div>
+          )}
+          {inviteToken && !chargementApercu && apercuInvitation && (
+            apercuInvitation.valide ? (
+              <div className="alert alert-warning fs-7 py-2 px-3 mb-4 rounded-3 d-flex align-items-start gap-2">
+                <Shield size={16} className="text-warning-emphasis flex-shrink-0 mt-1" />
+                <span>
+                  <strong>{apercuInvitation.inviteParNom}</strong> vous invite à rejoindre{' '}
+                  <strong>{apercuInvitation.projetNom}</strong> en tant que{' '}
+                  <strong>{(apercuInvitation.roleProjet || 'Membre').replace('_', ' ')}</strong>.
+                </span>
+              </div>
+            ) : (
+              <div className="alert alert-danger fs-7 py-2 px-3 mb-4 rounded-3">
+                {apercuInvitation.motifInvalide || "Cette invitation n'est plus valide."}
+              </div>
+            )
+          )}
+
           {!estInscription ? (
             /* ================= FORMULAIRE DE CONNEXION ================= */
             <form onSubmit={gererConnexion}>
@@ -166,17 +223,18 @@ export default function Login({ surConnexion }) {
                 <label className="form-label fs-7 text-secondary fw-semibold">E-mail</label>
                 <div className="input-group">
                   <span className="input-group-text bg-light border-light-subtle text-secondary"><Mail size={16} /></span>
-                  <input 
-                    type="email" 
-                    className="form-control bg-light border-light-subtle text-dark" 
-                    placeholder="Ex: mamadou.diallo@odc.gn" 
+                  <input
+                    type="email"
+                    className="form-control bg-light border-light-subtle text-dark"
+                    placeholder="Ex: mamadou.diallo@odc.gn"
                     value={emailConnexion}
                     onChange={(e) => setEmailConnexion(e.target.value)}
+                    readOnly={apercuInvitation?.valide === true}
                     required
                   />
                 </div>
               </div>
-              
+
               <div className="mb-4">
                 <label className="form-label fs-7 text-secondary fw-semibold">Mot de passe</label>
                 <div className="input-group">
@@ -249,12 +307,13 @@ export default function Login({ surConnexion }) {
                 <label className="form-label fs-7 text-secondary fw-semibold">E-mail *</label>
                 <div className="input-group">
                   <span className="input-group-text bg-light border-light-subtle text-secondary"><Mail size={16} /></span>
-                  <input 
-                    type="email" 
-                    className="form-control bg-light border-light-subtle text-dark" 
-                    placeholder="jean.dupont@email.com" 
+                  <input
+                    type="email"
+                    className="form-control bg-light border-light-subtle text-dark"
+                    placeholder="jean.dupont@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    readOnly={apercuInvitation?.valide === true}
                     required
                   />
                 </div>

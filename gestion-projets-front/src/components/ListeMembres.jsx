@@ -143,7 +143,6 @@ export default function ListeMembres({ membres, projets, taches, surSauvegarderM
       {estChef && modalOuverte && (
         <ModalMembre
           membreEdite={membreEdite}
-          projets={projets}
           surFermer={() => setModalOuverte(false)}
           surSauvegarder={(m) => {
             surSauvegarderMembre(m);

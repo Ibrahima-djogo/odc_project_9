@@ -89,4 +89,15 @@ public class RoleCheckService {
                     "Action réservée au Chef de Projet de ce projet.");
         }
     }
+
+    /**
+     * Retourne true si l'utilisateur donné est membre du projet donné (a une
+     * ligne dans membres_projet, quel que soit son rôle sur ce projet).
+     * Utilisé pour le modèle "Trello" : tout membre du projet peut faire
+     * avancer/reculer le statut de n'importe quelle tâche de ce projet, pas
+     * seulement celles qui lui sont assignées.
+     */
+    public boolean estMembreDuProjet(Long projetId, Long utilisateurId) {
+        return membreProjetRepository.existsByProjetIdAndUtilisateurId(projetId, utilisateurId);
+    }
 }

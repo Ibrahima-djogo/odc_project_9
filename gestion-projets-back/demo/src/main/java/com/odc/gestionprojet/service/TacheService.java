@@ -272,8 +272,9 @@ public class TacheService {
 
     /**
      * Determine si l'utilisateur connecte peut modifier cette tache (details
-     * ou statut) : ADMIN, chef du projet, ou membre assigne a cette tache
-     * precise. Utilise par le frontend pour afficher (ou non) les actions
+     * ou statut) : ADMIN, chef du projet, ou (modele "Trello") n'importe quel
+     * membre de ce projet — pas seulement l'assigne de cette tache precise.
+     * Utilise par le frontend pour afficher (ou non) les actions
      * d'edition/deplacement sur les cartes du Kanban.
      */
     private boolean peutModifierTache(Tache tache) {
@@ -294,7 +295,9 @@ public class TacheService {
                 return true;
             }
 
-            return roleCheckService.estChefOuAdminSurProjet(tache.getProjet().getId());
+            Long projetId = tache.getProjet().getId();
+            return roleCheckService.estChefOuAdminSurProjet(projetId)
+                    || roleCheckService.estMembreDuProjet(projetId, connecte.getId());
         } catch (Exception e) {
             // Contexte sans authentification (tests, initialisation) : par
             // defaut, pas de droit d'edition.

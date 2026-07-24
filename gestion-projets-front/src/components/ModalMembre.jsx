@@ -2,27 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { obtenirUrlGravatar, obtenirUrlInitials, AVATARS_PREDEFINIS } from '../utils/avatarHelper';
 import { Image, Check } from 'lucide-react';
 
-// Fonctions/rôles possibles sur UN projet donné (indépendant du rôle de sécurité).
-const OPTIONS_ROLE_PROJET = [
-  { value: 'MEMBRE', label: 'Membre' },
-  { value: 'CHEF_PROJET', label: 'Chef de Projet' },
-  { value: 'DEVELOPPEUR', label: 'Développeur' },
-  { value: 'DESIGNER', label: 'UI/UX Designer' },
-  { value: 'TESTEUR', label: 'QA / Testeur' },
-];
-
-export default function ModalMembre({ membreEdite, projets = [], surFermer, surSauvegarder }) {
+export default function ModalMembre({ membreEdite, surFermer, surSauvegarder }) {
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
-  // Rôle de sécurité applicative globale : ADMIN ou MEMBRE. Distinct de la
-  // fonction sur chaque projet (voir projetRoles), qui n'a aucun impact sur
-  // les droits d'accès.
+  // Rôle de sécurité applicative globale : ADMIN ou MEMBRE. La fonction sur
+  // un projet précis (Développeur, Designer, Testeur...) ne se gère plus ici
+  // — elle se décide désormais uniquement via le système d'invitation par
+  // e-mail, depuis la fiche de chaque projet (ProjectDetails.jsx).
   const [roleGlobal, setRoleGlobal] = useState('MEMBRE');
-  const [projetIds, setProjetIds] = useState([]);
-  // Fonction de ce membre sur CHAQUE projet coché, ex: { '3': 'DEVELOPPEUR' }
-  const [projetRoles, setProjetRoles] = useState({});
 
   // States pour la gestion de l'avatar
   const [typeAvatar, setTypeAvatar] = useState('initials'); // 'gravatar' | 'initials' | 'predefini' | 'custom'
@@ -35,11 +24,6 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
       setPrenom(membreEdite.prenom || '');
       setEmail(membreEdite.email || '');
       setRoleGlobal(membreEdite.roleGlobal === 'ADMIN' ? 'ADMIN' : 'MEMBRE');
-
-      // Initialiser les projets affectés et la fonction sur chacun d'eux
-      const idsInitiaux = membreEdite.projetIds ? [...membreEdite.projetIds] : [];
-      setProjetIds(idsInitiaux);
-      setProjetRoles({ ...(membreEdite.projetRoles || {}) });
 
       // Reconstruire l'état d'avatar
       const url = membreEdite.avatarUrl || '';
@@ -60,14 +44,11 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
       setEmail('');
       setMotDePasse('');
       setRoleGlobal('MEMBRE');
-      const premierProjetId = projets[0] ? [projets[0].id] : [];
-      setProjetIds(premierProjetId);
-      setProjetRoles(premierProjetId.length ? { [premierProjetId[0]]: 'MEMBRE' } : {});
       setTypeAvatar('initials');
       setAvatarPredefiniUrl(AVATARS_PREDEFINIS[0].url);
       setAvatarCustomUrl('');
     }
-  }, [membreEdite, projets]);
+  }, [membreEdite]);
 
   // URL d'avatar final basé sur la sélection réactive
   const obtenirAvatarUrlFinal = () => {
@@ -82,20 +63,6 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
       default:
         return obtenirUrlInitials(prenom, nom);
     }
-  };
-
-  const gererClicProjet = (id) => {
-    if (projetIds.includes(id)) {
-      setProjetIds(projetIds.filter(pId => pId !== id));
-    } else {
-      setProjetIds([...projetIds, id]);
-      // Fonction par défaut pour un projet qu'on vient de cocher
-      setProjetRoles(prev => (prev[id] ? prev : { ...prev, [id]: 'MEMBRE' }));
-    }
-  };
-
-  const changerRoleProjet = (id, nouveauRole) => {
-    setProjetRoles(prev => ({ ...prev, [id]: nouveauRole }));
   };
 
   const soumettre = (e) => {
@@ -115,8 +82,6 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
       email: email.trim().toLowerCase(),
       motDePasse: motDePasse.trim() || undefined, // uniquement pour la création
       roleGlobal,
-      projetIds,
-      projetRoles,
       avatarUrl: obtenirAvatarUrlFinal()
     });
   };
@@ -180,6 +145,7 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                     />
                     <div className="form-text fs-8">
                       Ce mot de passe sera communiqué au membre pour sa première connexion.
+                      Pour l'affecter à un projet, invitez-le ensuite par e-mail depuis la fiche du projet concerné.
                     </div>
                   </div>
                 )}
@@ -200,75 +166,11 @@ export default function ModalMembre({ membreEdite, projets = [], surFermer, surS
                       <option value="ADMIN">Administrateur</option>
                     </select>
                     <div className="form-text fs-8">
-                      Détermine les droits globaux (Admin = accès à tout). Indépendant de sa fonction par projet ci-dessous.
+                      Détermine les droits globaux (Admin = accès à tout). Indépendant de sa fonction par projet,
+                      qui se gère désormais depuis la fiche de chaque projet.
                     </div>
                   </div>
                 )}
-
-                {/* Section Affectation à Plusieurs Projets, avec fonction par projet */}
-                <div className="col-12 mt-2">
-                  <label className="form-label fs-7 text-secondary fw-semibold mb-2">
-                    Affecté aux Projets (Sélection multiple)
-                  </label>
-                  {projets.length === 0 ? (
-                    <div className="text-muted fs-8">Aucun projet créé pour le moment.</div>
-                  ) : (
-                    <div className="d-flex flex-wrap gap-2 p-3 bg-light rounded-3 border border-light-subtle" style={{ maxHeight: '120px', overflowY: 'auto' }}>
-                      {projets.map(p => {
-                        const estCoche = projetIds.includes(p.id);
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => gererClicProjet(p.id)}
-                            className={`d-flex align-items-center gap-2 p-2 rounded-pill border cursor-pointer select-none transition-all fs-8 ${estCoche ? 'bg-warning-subtle text-dark border-warning fw-semibold' : 'bg-white text-secondary border-light-subtle'}`}
-                          >
-                            <span>{p.titre}</span>
-                            <input
-                              type="checkbox"
-                              className="form-check-input m-0 border-secondary"
-                              checked={estCoche}
-                              onChange={() => {}} // géré par clic sur le badge
-                              style={{ width: '12px', height: '12px' }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Fonction sur chaque projet coché */}
-                  {projetIds.length > 0 && (
-                    <div className="mt-3 d-flex flex-column gap-2 p-3 bg-light rounded-3 border border-light-subtle">
-                      <label className="form-label fs-8 text-secondary fw-semibold mb-1">
-                        Fonction sur chaque projet
-                      </label>
-                      {projetIds.map(pId => {
-                        const projet = projets.find(p => p.id === pId);
-                        if (!projet) return null;
-                        return (
-                          <div key={pId} className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-1 gap-sm-2 pb-2 pb-sm-0 border-bottom border-light-subtle border-bottom-sm-0">
-                            <span
-                              className="fs-8 text-dark fw-medium text-truncate w-100 w-sm-auto"
-                              style={{ maxWidth: '200px' }}
-                              title={projet.titre}
-                            >
-                              {projet.titre}
-                            </span>
-                            <select
-                              className="form-select form-select-sm bg-white text-dark border-light-subtle w-100 w-sm-auto flex-grow-1"
-                              value={projetRoles[pId] || 'MEMBRE'}
-                              onChange={(e) => changerRoleProjet(pId, e.target.value)}
-                            >
-                              {OPTIONS_ROLE_PROJET.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
 
                 {/* Section Configuration de l'Avatar / Photo de profil */}
                 <div className="col-12 mt-3 pt-3 border-top border-light-subtle">

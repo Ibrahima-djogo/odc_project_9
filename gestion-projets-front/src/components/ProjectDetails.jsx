@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Download, Edit2, Check, X, Lock, Shield, ArrowLeft, RefreshCw, AlertTriangle, Users } from 'lucide-react';
+import { DollarSign, Download, Edit2, Check, X, Lock, Shield, ArrowLeft, RefreshCw, AlertTriangle, Users, Mail, Send, Clock, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 
 const OPTIONS_ROLE_PROJET = [
@@ -14,7 +14,7 @@ const VALEURS_ROLE_PROJET_CONNUES = OPTIONS_ROLE_PROJET.map(opt => opt.value);
 /**
  * Composant d'affichage détaillé d'un projet.
  * Gère les permissions en lecture/écriture contextuelles selon le rôle de l'utilisateur connecté sur ce projet.
- * 
+ *
  * @param {string|number} projectId - L'ID du projet à afficher.
  * @param {function} surFermer - Fonction callback pour retourner à la vue précédente.
  */
@@ -36,10 +36,21 @@ export default function ProjectDetails({ projectId, surFermer }) {
   const [roleEdite, setRoleEdite] = useState('MEMBRE');
   const [roleEditeLibre, setRoleEditeLibre] = useState('');
 
+  // Invitations par e-mail : remplace l'ancien ajout par sélection dans une
+  // liste déroulante — scalable à des milliers d'utilisateurs de la plateforme.
+  const [emailInvitation, setEmailInvitation] = useState('');
+  const [roleInvitation, setRoleInvitation] = useState('MEMBRE');
+  const [roleInvitationLibre, setRoleInvitationLibre] = useState('');
+  const [invitations, setInvitations] = useState([]);
+  const [chargementInvitations, setChargementInvitations] = useState(true);
+  const [envoiInvitationEnCours, setEnvoiInvitationEnCours] = useState(false);
+  const [messageInvitation, setMessageInvitation] = useState(null);
+
   // Charger les données du projet
   useEffect(() => {
     chargerProjet();
     chargerMembres();
+    chargerInvitations();
   }, [projectId]);
 
   const chargerProjet = async () => {
@@ -70,6 +81,21 @@ export default function ProjectDetails({ projectId, surFermer }) {
     }
   };
 
+  const chargerInvitations = async () => {
+    try {
+      setChargementInvitations(true);
+      const data = await api.listerInvitationsProjet(projectId);
+      setInvitations(data || []);
+    } catch (err) {
+      // Un simple membre (non gestionnaire) n'a pas le droit de lister les
+      // invitations : on l'ignore silencieusement, la section ne s'affiche
+      // de toute façon que pour les gestionnaires.
+      setInvitations([]);
+    } finally {
+      setChargementInvitations(false);
+    }
+  };
+
   const commencerEditionRole = (membre) => {
     setMembreEnEdition(membre.utilisateurId);
     const roleActuel = membre.roleProjet || 'MEMBRE';
@@ -95,6 +121,41 @@ export default function ProjectDetails({ projectId, surFermer }) {
     }
   };
 
+  // Envoyer une invitation par e-mail à rejoindre ce projet
+  const envoyerInvitation = async (e) => {
+    e.preventDefault();
+    const emailNettoye = emailInvitation.trim().toLowerCase();
+    if (!emailNettoye) return;
+
+    const roleAEnvoyer = roleInvitation === 'Autre' ? (roleInvitationLibre.trim() || 'Autre') : roleInvitation;
+
+    try {
+      setEnvoiInvitationEnCours(true);
+      setMessageInvitation(null);
+      await api.inviterMembre(projectId, emailNettoye, roleAEnvoyer);
+      setEmailInvitation('');
+      setRoleInvitation('MEMBRE');
+      setRoleInvitationLibre('');
+      setMessageInvitation({ type: 'success', texte: `Invitation envoyée à ${emailNettoye}.` });
+      await chargerInvitations();
+    } catch (err) {
+      console.error(err);
+      setMessageInvitation({ type: 'danger', texte: err.message || "Erreur lors de l'envoi de l'invitation." });
+    } finally {
+      setEnvoiInvitationEnCours(false);
+    }
+  };
+
+  const annulerInvitation = async (invitationId) => {
+    try {
+      await api.revoquerInvitation(projectId, invitationId);
+      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'annulation de l'invitation.");
+    }
+  };
+
   // Enregistrer le nouveau budget
   const gererSauvegardeBudget = async () => {
     if (!projet) return;
@@ -103,7 +164,7 @@ export default function ProjectDetails({ projectId, surFermer }) {
       setSauvegardeEnCours(true);
       // Appel à l'API sécurisée du backend
       const projetMisAJour = await api.modifierBudgetProjet(projet.id, parseFloat(budgetEdite));
-      
+
       setProjet(projetMisAJour);
       setEstEnEditionBudget(false);
       setMessageSucces("Budget mis à jour avec succès !");
@@ -150,7 +211,7 @@ export default function ProjectDetails({ projectId, surFermer }) {
           <ArrowLeft size={18} />
           <span>Retour aux projets</span>
         </button>
-        
+
         {/* Badge dynamique indiquant le rôle sur le projet */}
         <div className="d-flex align-items-center gap-2">
           {aLesDroitsDeGestion ? (
@@ -330,6 +391,107 @@ export default function ProjectDetails({ projectId, surFermer }) {
           </div>
         )}
       </div>
+
+      {/* Section Invitation par e-mail : remplace l'ancienne sélection dans
+          une liste déroulante de tous les utilisateurs de la plateforme.
+          Visible uniquement pour les gestionnaires de ce projet précis. */}
+      {aLesDroitsDeGestion && (
+        <div className="border-top pt-4 mt-2 mb-2">
+          <h4 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+            <Mail size={20} className="text-warning" />
+            Inviter un collaborateur
+          </h4>
+
+          <form onSubmit={envoyerInvitation} className="card bg-light border-light-subtle rounded-4 p-3 mb-3">
+            <div className="row g-2 align-items-end">
+              <div className="col-12 col-md-5">
+                <label className="form-label fs-8 text-secondary fw-semibold mb-1">Adresse e-mail</label>
+                <input
+                  type="email"
+                  className="form-control bg-white text-dark border-light-subtle"
+                  placeholder="collaborateur@email.com"
+                  value={emailInvitation}
+                  onChange={(e) => setEmailInvitation(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-12 col-md-4">
+                <label className="form-label fs-8 text-secondary fw-semibold mb-1">Fonction sur ce projet</label>
+                <select
+                  className="form-select bg-white text-dark border-light-subtle"
+                  value={roleInvitation}
+                  onChange={(e) => setRoleInvitation(e.target.value)}
+                >
+                  {OPTIONS_ROLE_PROJET.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                  <option value="Autre">Autre...</option>
+                </select>
+              </div>
+              <div className="col-12 col-md-3">
+                <button type="submit" className="btn btn-warning text-dark fw-bold w-100 d-flex align-items-center justify-content-center gap-2" disabled={envoiInvitationEnCours}>
+                  {envoiInvitationEnCours ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />}
+                  <span>Inviter</span>
+                </button>
+              </div>
+              {roleInvitation === 'Autre' && (
+                <div className="col-12">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm bg-white text-dark border-light-subtle"
+                    placeholder="Ex: Scrum Master, Rédacteur..."
+                    value={roleInvitationLibre}
+                    onChange={(e) => setRoleInvitationLibre(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+            {messageInvitation && (
+              <div className={`alert alert-${messageInvitation.type} fs-8 py-2 px-3 mt-3 mb-0 rounded-3`}>
+                {messageInvitation.texte}
+              </div>
+            )}
+          </form>
+
+          {chargementInvitations ? (
+            <p className="text-secondary fs-8">Chargement des invitations...</p>
+          ) : invitations.length > 0 && (
+            <div className="table-responsive">
+              <table className="table align-middle mb-0">
+                <thead>
+                  <tr className="text-secondary fs-8 text-uppercase">
+                    <th>Invitation en attente</th>
+                    <th>Fonction proposée</th>
+                    <th></th>
+                    <th className="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invitations.map(inv => (
+                    <tr key={inv.id}>
+                      <td className="fs-7 text-dark">{inv.email}</td>
+                      <td>
+                        <span className="badge bg-light text-dark border border-light-subtle fs-8">
+                          {(inv.roleProjet || 'MEMBRE').replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="fs-8 text-muted d-flex align-items-center gap-1">
+                        <Clock size={12} />
+                        Expire le {new Date(inv.dateExpiration).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="text-end">
+                        <button className="btn btn-sm btn-link text-danger p-0" onClick={() => annulerInvitation(inv.id)} title="Annuler l'invitation">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section d'Exportation - Masquée si l'utilisateur n'a pas les droits de gestion */}
       {aLesDroitsDeGestion && (

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-export default function ModalProjet({ projetEdite, membres = [], surFermer, surSauvegarder, utilisateurConnecte }) {
+export default function ModalProjet({ projetEdite, surFermer, surSauvegarder, utilisateurConnecte }) {
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
   // À la création (projetEdite absent), n'importe quel utilisateur devient
-  // automatiquement Chef du projet qu'il crée : le formulaire complet (budget,
-  // nomination du chef) lui est donc ouvert. En modification, seul l'ADMIN ou
-  // le Chef de CE projet précis (userHasManagerRights, calculé côté backend) y a accès.
+  // automatiquement Chef du projet qu'il crée : le formulaire complet
+  // (budget) lui est donc ouvert. En modification, seul l'ADMIN ou le Chef
+  // de CE projet précis (userHasManagerRights, calculé côté backend) y a accès.
   const estChef = !projetEdite || estAdmin || projetEdite?.userHasManagerRights === true;
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
@@ -14,8 +14,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [budget, setBudget] = useState('');
-  const [membreIdsAffectes, setMembreIdsAffectes] = useState([]);
-  const [chefDeProjetId, setChefDeProjetId] = useState('');
 
   const categoriesPredefinies = ['Web App', 'Mobile', 'Design & Web', 'API Backend'];
 
@@ -36,10 +34,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
         setCategorie('Autre');
         setAutreCategorie(cat);
       }
-
-      // Membres affectés
-      const affectes = membres.filter(m => m.projetIds?.includes(projetEdite.id)).map(m => m.id);
-      setMembreIdsAffectes(affectes);
     } else {
       setTitre('');
       setDescription('');
@@ -48,17 +42,8 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
       setDateDebut('');
       setDateFin('');
       setBudget('');
-      setMembreIdsAffectes([]);
     }
-  }, [projetEdite, membres]);
-
-  const gererClicMembre = (id) => {
-    if (membreIdsAffectes.includes(id)) {
-      setMembreIdsAffectes(membreIdsAffectes.filter(mId => mId !== id));
-    } else {
-      setMembreIdsAffectes([...membreIdsAffectes, id]);
-    }
-  };
+  }, [projetEdite]);
 
   const soumettre = (e) => {
     e.preventDefault();
@@ -74,8 +59,6 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
       dateDebut,
       dateFin,
       budget: budget !== '' ? parseFloat(budget) : null,
-      membreIdsAffectes, // Utilisé par App.jsx pour l'association multiple
-      chefDeProjetId     // Utilisé pour nommer le chef de projet à la création
     });
   };
 
@@ -104,9 +87,9 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
 
                 <div className="col-md-6">
                   <label className="form-label fs-7 text-secondary fw-semibold">Catégorie</label>
-                  <select 
-                    className="form-select bg-white text-dark border-light-subtle" 
-                    value={categorie} 
+                  <select
+                    className="form-select bg-white text-dark border-light-subtle"
+                    value={categorie}
                     onChange={(e) => setCategorie(e.target.value)}
                   >
                     <option value="Web App">Web App</option>
@@ -194,68 +177,14 @@ export default function ModalProjet({ projetEdite, membres = [], surFermer, surS
                   </div>
                 )}
 
-                {/* Nomination du Chef de Projet (uniquement à la création) */}
+                {/* Plus de nomination de chef ni d'affectation de membres ici :
+                    la création se fait seul (on en devient chef), on invite
+                    ensuite par e-mail depuis la fiche du projet. */}
                 {!projetEdite && (
-                  <div className="col-12 border-top border-light-subtle pt-3 mt-3">
-                    <label className="form-label fs-7 text-secondary fw-semibold mb-2">
-                      Nommer un Chef de Projet pour piloter ce projet
-                    </label>
-                    <select 
-                      className="form-select bg-white text-dark border-light-subtle" 
-                      value={chefDeProjetId} 
-                      onChange={(e) => setChefDeProjetId(e.target.value)}
-                    >
-                      <option value="">Moi-même (Par défaut)</option>
-                      {membres.map(m => (
-                        <option key={m.id} value={m.id}>{m.prenom} {m.nom} ({(m.projetRoles?.[projetEdite?.id] || m.roleGlobal || 'MEMBRE').toString().replace('_', ' ')})</option>
-                      ))}
-                    </select>
-                    <div className="form-text text-muted fs-8">
-                      La personne sélectionnée aura les pleins droits (Kanban, équipe) sur ce projet spécifique.
-                    </div>
+                  <div className="col-12 mt-2 p-3 bg-light rounded-3 border border-light-subtle fs-8 text-secondary">
+                    Une fois le projet créé, invitez des collaborateurs par e-mail depuis sa fiche détaillée.
                   </div>
                 )}
-
-                {/* Section Affectation Multiple des Membres existants */}
-                <div className="col-12 mt-3 pt-3 border-top border-light-subtle">
-                  <label className="form-label fs-7 text-secondary fw-semibold mb-2">
-                    Affecter des membres existants à ce projet (Association multiple)
-                  </label>
-                  {membres.length === 0 ? (
-                    <div className="text-muted fs-8 py-2">
-                      Aucun membre disponible. Vous pourrez créer des membres plus tard.
-                    </div>
-                  ) : (
-                    <div className="d-flex flex-wrap gap-2 p-3 bg-light rounded-3 border border-light-subtle" style={{ maxHeight: '150px', overflowY: 'auto' }}>
-                      {membres.map(m => {
-                        const estCoche = membreIdsAffectes.includes(m.id);
-                        return (
-                          <div 
-                            key={m.id} 
-                            onClick={() => gererClicMembre(m.id)}
-                            className={`d-flex align-items-center gap-2 p-2 rounded-pill border cursor-pointer select-none transition-all fs-8 ${estCoche ? 'bg-warning-subtle text-dark border-warning fw-semibold' : 'bg-white text-secondary border-light-subtle'}`}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <img 
-                              src={m.avatarUrl} 
-                              alt={m.prenom} 
-                              className="rounded-circle"
-                              style={{ width: '20px', height: '20px', objectFit: 'cover' }}
-                            />
-                            <span>{m.prenom} {m.nom}</span>
-                            <input 
-                              type="checkbox" 
-                              className="form-check-input m-0 border-secondary"
-                              checked={estCoche}
-                              onChange={() => {}} // géré par le clic sur le conteneur
-                              style={{ width: '12px', height: '12px' }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
             <div className="modal-footer border-top border-light-subtle">

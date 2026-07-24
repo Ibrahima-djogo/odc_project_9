@@ -217,18 +217,12 @@ export const api = {
       });
       return mapProjetBackVersFront(p);
     } else {
-      // Création : le chef nommé et les membres cochés sont transmis dans le
-      // même appel, pour que le backend les affecte en une seule transaction
-      // (ProjetService.creerProjet) — ne jamais les ré-affecter après coup
-      // séparément, sous peine de doublons/conflits.
-      const bodyCreation = {
-        ...body,
-        chefDeProjetId: projet.chefDeProjetId ? parseInt(projet.chefDeProjetId, 10) : null,
-        membreIdsAffectes: (projet.membreIdsAffectes || []).map(id => parseInt(id, 10))
-      };
+      // Création : solo, l'utilisateur en devient automatiquement chef côté
+      // backend. Plus de chef nommé ni de membres affectés ici — on invite
+      // par e-mail après coup depuis la fiche du projet (voir inviterMembre).
       const p = await requete('/projets', {
         method: 'POST',
-        body: JSON.stringify(bodyCreation)
+        body: JSON.stringify(body)
       });
       return mapProjetBackVersFront(p);
     }
@@ -292,6 +286,56 @@ export const api = {
     return requete(`/projets/${projetId}/membres/${utilisateurId}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ roleProjet })
+    });
+  },
+
+  // =========================================================================
+  // INVITATIONS PAR E-MAIL (remplace la sélection dans une liste déroulante
+  // pour ajouter un membre à un projet — scalable à des milliers d'utilisateurs)
+  // =========================================================================
+
+  /**
+   * Invite quelqu'un par e-mail à rejoindre un projet, avec une fonction
+   * donnée sur CE projet. Réservé au chef du projet (ou ADMIN).
+   */
+  inviterMembre: async (projetId, email, roleProjet = 'MEMBRE') => {
+    return requete(`/projets/${projetId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify({ email, roleProjet })
+    });
+  },
+
+  /**
+   * Liste les invitations en attente d'un projet.
+   */
+  listerInvitationsProjet: async (projetId) => {
+    return requete(`/projets/${projetId}/invitations`);
+  },
+
+  /**
+   * Révoque une invitation en attente.
+   */
+  revoquerInvitation: async (projetId, invitationId) => {
+    return requete(`/projets/${projetId}/invitations/${invitationId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  /**
+   * Aperçu PUBLIC d'une invitation à partir de son token (avant connexion
+   * ou inscription) — n'exige pas d'être authentifié.
+   */
+  obtenirApercuInvitation: async (token) => {
+    return requete(`/invitations/${encodeURIComponent(token)}`);
+  },
+
+  /**
+   * Accepte l'invitation pour l'utilisateur actuellement connecté (compte
+   * tout juste créé, ou déjà existant).
+   */
+  accepterInvitation: async (token) => {
+    return requete(`/invitations/${encodeURIComponent(token)}/accepter`, {
+      method: 'POST'
     });
   },
 

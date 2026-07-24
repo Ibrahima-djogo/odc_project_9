@@ -35,6 +35,12 @@ function App() {
   const [utilisateurConnecte, setUtilisateurConnecte] = useState(null);
   const [toast, setToast] = useState(null);
 
+  // Token d'invitation par e-mail présent dans l'URL (?invite=TOKEN), lu une
+  // seule fois au chargement — voir gererConnexion pour l'acceptation.
+  const [inviteToken, setInviteToken] = useState(
+    () => new URLSearchParams(window.location.search).get('invite')
+  );
+
   // États des données issues du backend
   const [projets, setProjets] = useState([]);
   const [taches, setTaches] = useState([]);
@@ -249,6 +255,27 @@ function App() {
       } else {
         declencherToast(`Bonjour ${profil.prenom}, ravi de vous revoir !`);
       }
+
+      // Si la connexion/inscription vient d'un lien d'invitation, on
+      // l'accepte automatiquement puis on atterrit directement sur le projet.
+      if (inviteToken) {
+        try {
+          const resultat = await api.accepterInvitation(inviteToken);
+          if (resultat?.projetId) {
+            setProjetFiltreId(resultat.projetId.toString());
+            setVueActive('kanban');
+          }
+          declencherToast('Vous avez rejoint le projet avec succès !');
+        } catch (err) {
+          console.error("Erreur lors de l'acceptation de l'invitation :", err);
+          declencherToast(err.message || "Impossible d'accepter cette invitation.", 'danger');
+        } finally {
+          // Nettoie l'URL (retire ?invite=...) pour ne pas ré-accepter au
+          // prochain rafraîchissement de la page.
+          window.history.replaceState({}, '', window.location.pathname);
+          setInviteToken(null);
+        }
+      }
     } catch (err) {
       console.error('Erreur chargement profil :', err);
       api.logout();
@@ -278,41 +305,15 @@ function App() {
   };
 
   /**
-   * Crée ou modifie un projet en base et met à jour ses affectations de membres.
+   * Crée ou modifie un projet en base. Les affectations de membres ne
+   * passent plus par ici : à la création, on devient seul chef du projet
+   * (voir ProjetService.creerProjet) ; les collaborateurs sont ensuite
+   * invités par e-mail depuis la fiche du projet (ProjectDetails.jsx).
    */
   const sauvegarderProjet = async (projet) => {
     try {
       const isEdition = projet.id && !projet.id.startsWith('p_');
       const projetSauve = await api.sauvegarderProjet(projet);
-
-      if (!isEdition) {
-        // Création : le chef nommé (chefDeProjetId) et les membres cochés
-        // (membreIdsAffectes) sont transmis dans le corps même de la requête
-        // POST /api/projets et affectés en une seule transaction côté backend
-        // (ProjetService.creerProjet) — rien à refaire ici, sous peine de
-        // provoquer des doublons/conflits (409) sur des adhésions déjà créées.
-      } else if (projet.membreIdsAffectes) {
-        // Modification : le backend ne touche pas aux affectations lors d'un
-        // PUT /api/projets/{id}, donc on synchronise nous-mêmes par diff.
-        const membresActuelsBack = await api.getMembresProjet(parseInt(projet.id));
-        const idsActuels = membresActuelsBack.map(m => m.utilisateurId.toString());
-        const idsCibles = projet.membreIdsAffectes.map(id => id.toString());
-
-        // 1. Ajouter les nouveaux membres affectés (rôle par défaut : MEMBRE ;
-        // la fonction précise se règle ensuite depuis la fiche du projet)
-        for (const targetId of idsCibles) {
-          if (!idsActuels.includes(targetId)) {
-            await api.ajouterMembreProjet(parseInt(projetSauve.id), parseInt(targetId), 'MEMBRE');
-          }
-        }
-
-        // 2. Retirer les membres retirés du projet
-        for (const currentId of idsActuels) {
-          if (!idsCibles.includes(currentId)) {
-            await api.retirerMembreProjet(parseInt(projetSauve.id), parseInt(currentId));
-          }
-        }
-      }
 
       // Log d'activité
       ajouterActiviteLocale(`${isEdition ? 'a modifié' : 'a créé'} le projet "${projetSauve.titre}"`);
@@ -477,7 +478,7 @@ function App() {
           `Email : ${membre.email}\n` +
           `Mot de passe : ${mdp}\n\n` +
           `Connectez-vous sur la plateforme et changez votre mot de passe dès que possible.`,
-          membre.projetIds || []
+          []
         );
         declencherToast(`Compte créé pour ${membre.prenom} ${membre.nom} !`);
 
@@ -494,30 +495,9 @@ function App() {
         declencherToast("Informations du collaborateur mises à jour.");
       }
 
-      // 2. Mettre à jour les adhésions aux projets ET la fonction de cet
-      // utilisateur sur chaque projet (membre.projetRoles[projetId]).
-      if (membre.projetIds) {
-        for (const p of projets) {
-          const pId = p.id;
-          const doitParticiper = membre.projetIds.includes(pId);
-          const roleProjetSouhaite = (membre.projetRoles && membre.projetRoles[pId]) || 'MEMBRE';
-
-          let membresP = [];
-          try {
-            membresP = await api.getMembresProjet(parseInt(pId));
-          } catch {}
-
-          const membreExistant = membresP.find(mp => mp.utilisateurId.toString() === utilisateurId.toString());
-
-          if (doitParticiper && !membreExistant) {
-            await api.ajouterMembreProjet(parseInt(pId), parseInt(utilisateurId), roleProjetSouhaite);
-          } else if (!doitParticiper && membreExistant) {
-            await api.retirerMembreProjet(parseInt(pId), parseInt(utilisateurId));
-          } else if (doitParticiper && membreExistant && membreExistant.roleProjet !== roleProjetSouhaite) {
-            await api.modifierRoleMembreProjet(parseInt(pId), parseInt(utilisateurId), roleProjetSouhaite);
-          }
-        }
-      }
+      // L'affectation à un projet ne se fait plus ici : elle passe désormais
+      // exclusivement par le système d'invitation par e-mail, depuis la
+      // fiche de chaque projet (ProjectDetails.jsx → api.inviterMembre).
 
       await chargerDonnees();
     } catch (err) {
@@ -562,7 +542,7 @@ function App() {
   if (!utilisateurConnecte) {
     return (
       <>
-        <Login surConnexion={gererConnexion} />
+        <Login surConnexion={gererConnexion} inviteToken={inviteToken} />
         {toast && (
           <Toast
             message={toast.message}
@@ -741,7 +721,6 @@ function App() {
       {modalProjetOuverte && (
         <ModalProjet
           projetEdite={projetEdite}
-          membres={membres}
           surFermer={() => setModalProjetOuverte(false)}
           surSauvegarder={sauvegarderProjet}
           utilisateurConnecte={utilisateurConnecte}
