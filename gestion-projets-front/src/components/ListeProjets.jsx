@@ -24,7 +24,10 @@ export default function ListeProjets({ projets, taches, surOuvrirModal, surSuppr
         {projets.map((projet) => {
           const tachesProjet = taches.filter(t => t.projetId === projet.id);
           const terminees = tachesProjet.filter(t => t.statut === 'TERMINE').length;
-          const progression = tachesProjet.length > 0 ? Math.round((terminees / tachesProjet.length) * 100) : 0;
+          // Pourcentage calculé côté backend (crédit partiel aux tâches EN_COURS) :
+          // ne pas recalculer localement, sinon une seule tâche EN_COURS resterait
+          // affichée à 0% jusqu'à ce qu'elle passe directement à TERMINE.
+          const progression = projet.progression ?? 0;
 
           return (
             <div key={projet.id} className="col-md-6 col-lg-4">

@@ -191,6 +191,7 @@ public class ProjetService {
         response.setCreateurPrenom(projet.getCreateur().getPrenom());
         response.setNombreTaches(projet.getTaches().size());
         response.setNombreMembres(projet.getMembres().size());
+        response.setProgression(ProjetStatutCalculator.calculerProgression(projet.getTaches()));
 
         // Déterminer le rôle contextuel et les droits de gestion de l'utilisateur connecté
         try {

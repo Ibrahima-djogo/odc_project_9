@@ -440,6 +440,10 @@ function mapProjetBackVersFront(p) {
     createurNom: p.createurPrenom && p.createurNom ? `${p.createurPrenom} ${p.createurNom}` : 'Admin',
     nombreTaches: p.nombreTaches || 0,
     nombreMembres: p.nombreMembres || 0,
+    // Pourcentage d'avancement calculé côté backend (TERMINE=100%, EN_COURS=50%,
+    // A_FAIRE=0% — voir ProjetStatutCalculator) : à utiliser tel quel, ne jamais
+    // recalculer une approximation à partir des seules tâches chargées localement.
+    progression: p.progression ?? 0,
     currentUserRole: p.currentUserRole || null,
     // Booléen calculé par le backend : true si ADMIN global OU CHEF_PROJET sur ce projet
     userHasManagerRights: p.userHasManagerRights === true

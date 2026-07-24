@@ -43,4 +43,11 @@ public class ProjetResponse {
     // Statistiques rapides utiles pour le frontend
     private int nombreTaches;
     private int nombreMembres;
+
+    // Pourcentage d'avancement (0-100), calcule cote serveur a partir des
+    // taches du projet : TERMINE = 100% de son poids, EN_COURS = 50% (credit
+    // partiel), A_FAIRE = 0%. Voir ProjetStatutCalculator.calculerProgression.
+    // Le frontend doit utiliser cette valeur telle quelle, jamais recalculer
+    // une approximation a partir des seules taches deja chargees localement.
+    private int progression;
 }

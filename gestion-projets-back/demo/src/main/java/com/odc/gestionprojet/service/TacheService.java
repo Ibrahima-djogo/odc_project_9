@@ -197,12 +197,10 @@ public class TacheService {
      * courant de ses taches (jamais a partir de son statut precedent : ce
      * n'est pas un simple bascule, c'est une fonction pure de l'ensemble des
      * taches, appelee apres chaque creation/modification/suppression de
-     * tache). Regles, dans cet ordre :
-     * 1. Aucune tache, ou aucune n'est encore demarree/terminee -> PLANIFIE.
-     * 2. Des qu'au moins une tache est EN_COURS -> EN_COURS.
-     * 3. Uniquement quand TOUTES les taches sont TERMINE -> TERMINE.
-     * Le statut d'un projet n'est plus modifiable manuellement ailleurs dans
-     * l'application (voir ProjetService) : ce calcul en est la seule source.
+     * tache). Regle metier centralisee dans ProjetStatutCalculator (partagee
+     * avec ProjetStatutReconciliationRunner). Le statut d'un projet n'est
+     * plus modifiable manuellement ailleurs dans l'application (voir
+     * ProjetService) : ce calcul en est la seule source.
      */
     private void recalculerStatutProjet(Long projetId) {
         Objects.requireNonNull(projetId, "projetId must not be null");
@@ -211,29 +209,12 @@ public class TacheService {
             return;
         }
         List<Tache> tachesProjet = tacheRepository.findByProjetId(projetId);
-        String statutCalcule = calculerStatutSelonTaches(tachesProjet);
+        String statutCalcule = ProjetStatutCalculator.calculerStatut(tachesProjet);
 
         if (!statutCalcule.equals(projet.getStatut())) {
             projet.setStatut(statutCalcule);
             projetRepository.save(projet);
         }
-    }
-
-    private String calculerStatutSelonTaches(List<Tache> tachesProjet) {
-        if (tachesProjet.isEmpty()) {
-            return "PLANIFIE";
-        }
-        boolean toutesTerminees = tachesProjet.stream()
-                .allMatch(t -> "TERMINE".equals(t.getStatut()));
-        if (toutesTerminees) {
-            return "TERMINE";
-        }
-        boolean uneEnCours = tachesProjet.stream()
-                .anyMatch(t -> "EN_COURS".equals(t.getStatut()));
-        if (uneEnCours) {
-            return "EN_COURS";
-        }
-        return "PLANIFIE";
     }
 
     // =========================================================================

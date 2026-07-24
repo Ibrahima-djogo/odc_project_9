@@ -4,6 +4,7 @@ import com.odc.gestionprojet.entity.*;
 import com.odc.gestionprojet.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -15,9 +16,14 @@ import java.time.LocalDate;
  * Permet de peupler automatiquement la base de données avec des données
  * de démonstration cohérentes au lancement de l'application si celle-ci
  * est vide. Pratique pour les tests locaux et la présentation.
+ *
+ * @Order(1) : doit s'exécuter avant ProjetStatutReconciliationRunner, pour
+ * que les projets de démonstration qu'il crée soient eux aussi couverts par
+ * la réconciliation qui suit (même si leurs statuts sont déjà cohérents ici).
  */
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class DatabaseInitializer implements CommandLineRunner {
 
     private final UtilisateurRepository utilisateurRepository;

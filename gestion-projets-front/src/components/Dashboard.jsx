@@ -79,7 +79,8 @@ export default function Dashboard({ projets, taches, membres, activites, setVueA
               {projets.map((projet) => {
                 const tachesProjet = taches.filter(t => t.projetId === projet.id);
                 const terminees = tachesProjet.filter(t => t.statut === 'TERMINE').length;
-                const progression = tachesProjet.length > 0 ? Math.round((terminees / tachesProjet.length) * 100) : 0;
+                // Pourcentage calculé côté backend (crédit partiel aux tâches EN_COURS).
+                const progression = projet.progression ?? 0;
 
                 return (
                   <div 
