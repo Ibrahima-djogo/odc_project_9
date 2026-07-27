@@ -5,12 +5,8 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
   const estAdmin = utilisateurConnecte?.roleGlobal === 'ADMIN' || utilisateurConnecte?.roleGlobal === 'SUPER_ADMIN';
   const estChefGlobal = estAdmin;
 
-  // À la création, un simple MEMBRE global ne peut proposer que les projets
-  // sur lesquels il est CHEF_PROJET (userHasManagerRights) : le backend
-  // refuserait de toute façon la création d'une tâche sur un autre projet.
-  const projetsSelectionnables = (!tacheEditee && !estChefGlobal)
-    ? projets.filter(p => p.userHasManagerRights === true)
-    : projets;
+  // Tous les projets accessibles par l'utilisateur connecté sont sélectionnables
+  const projetsSelectionnables = projets;
 
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
@@ -24,14 +20,8 @@ export default function ModalTache({ tacheEditee, projets, membres, utilisateurC
   // Filtrer les membres qui appartiennent à ce projet (via leur tableau de projetIds)
   const membresDuProjet = membres.filter(m => m.projetIds && m.projetIds.includes(projetId));
 
-  // Seul le Chef de Projet (ou ADMIN) du projet de cette tâche peut modifier ses
-  // détails généraux (titre, description, échéance...). Un simple membre assigné
-  // ne peut faire évoluer que le statut, via les boutons Avancer/Reculer du Kanban —
-  // pas depuis ce formulaire. À la création, seul un gestionnaire (chef global ou
-  // chef d'au moins un projet) peut ouvrir ce modal (voir TableauKanban.jsx),
-  // donc le formulaire est toujours éditable.
-  const projetActuel = projets.find(p => p.id === projetId);
-  const estGestionnaire = !tacheEditee || projetActuel?.userHasManagerRights === true;
+  // Tout membre du projet connecté peut modifier les détails et le statut de la tâche
+  const estGestionnaire = true;
 
   useEffect(() => {
     if (tacheEditee) {

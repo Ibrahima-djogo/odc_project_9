@@ -1,39 +1,45 @@
 package com.odc.gestionprojet.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Envoi de vrais e-mails SMTP (via JavaMailSender), a ne pas confondre avec
- * MailService/Mail qui gerent la boite de reception SIMULEE affichee dans
- * l'onglet "Mails" de l'application (rien de reellement envoye, juste
- * persiste en base pour la demo).
+ * Service d'envoi d'e-mails via l'API HTTP de Resend (https://api.resend.com/emails).
+ * L'API HTTP est utilisee a la place de SMTP direct car les connexions SMTP sortantes
+ * (ports 587/465) sont bloquees sur certains hebergeurs cloud comme Railway.
  *
- * Toute methode d'envoi est @Async : un souci SMTP (service indisponible,
- * quota depasse, mauvais identifiants...) ne doit jamais faire echouer
- * l'operation metier qui a declenche l'e-mail (ajout d'un membre a un
- * projet). On journalise l'erreur et on continue.
+ * Toute methode d'envoi est @Async : un souci d'envoi (cle API invalide, quota depasse,
+ * erreur reseau...) ne doit jamais faire echouer l'operation metier qui a declenche
+ * l'e-mail. On journalise l'erreur et on continue.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${resend.api.key}")
+    private String cleApiResend;
 
-    @Value("${app.mail.from}")
+    @Value("${resend.mail.from}")
     private String adresseExpediteur;
 
     @Value("${app.mail.frontend-url}")
     private String urlFrontend;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /**
      * Notifie un utilisateur qu'il vient d'etre affecte a un projet.
@@ -48,16 +54,14 @@ public class EmailService {
     public void envoyerNotificationAffectationProjet(String emailDestinataire, String prenomDestinataire,
                                                        String nomProjet, String roleProjet) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setFrom(adresseExpediteur);
-            helper.setTo(emailDestinataire);
-            helper.setSubject("Vous avez été ajouté au projet \"" + nomProjet + "\" sur WorkPulse");
-            helper.setText(construireContenuHtml(prenomDestinataire, nomProjet, roleProjet), true);
-
-            mailSender.send(message);
+            String sujet = "Vous avez été ajouté au projet \"" + nomProjet + "\" sur WorkPulse";
+            String html = construireContenuHtml(prenomDestinataire, nomProjet, roleProjet);
+            envoyerEmailResend(emailDestinataire, sujet, html);
             log.info("E-mail de notification d'affectation envoye a {} (projet '{}')", emailDestinataire, nomProjet);
-        } catch (MessagingException | MailException e) {
+        } catch (HttpStatusCodeException e) {
+            log.error("Echec de l'envoi de l'e-mail de notification a {} (projet '{}') : {}",
+                    emailDestinataire, nomProjet, e.getResponseBodyAsString());
+        } catch (Exception e) {
             log.error("Echec de l'envoi de l'e-mail de notification a {} (projet '{}') : {}",
                     emailDestinataire, nomProjet, e.getMessage());
         }
@@ -82,19 +86,37 @@ public class EmailService {
                                          String nomInviteur, String token) {
         try {
             String lien = urlFrontend + "/?invite=" + token;
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setFrom(adresseExpediteur);
-            helper.setTo(emailDestinataire);
-            helper.setSubject(nomInviteur + " vous invite à rejoindre \"" + nomProjet + "\" sur WorkPulse");
-            helper.setText(construireContenuInvitationHtml(nomProjet, roleProjet, nomInviteur, lien), true);
-
-            mailSender.send(message);
+            String sujet = nomInviteur + " vous invite à rejoindre \"" + nomProjet + "\" sur WorkPulse";
+            String html = construireContenuInvitationHtml(nomProjet, roleProjet, nomInviteur, lien);
+            envoyerEmailResend(emailDestinataire, sujet, html);
             log.info("E-mail d'invitation envoye a {} (projet '{}')", emailDestinataire, nomProjet);
-        } catch (MessagingException | MailException e) {
+        } catch (HttpStatusCodeException e) {
+            log.error("Echec de l'envoi de l'e-mail d'invitation a {} (projet '{}') : {}",
+                    emailDestinataire, nomProjet, e.getResponseBodyAsString());
+        } catch (Exception e) {
             log.error("Echec de l'envoi de l'e-mail d'invitation a {} (projet '{}') : {}",
                     emailDestinataire, nomProjet, e.getMessage());
+        }
+    }
+
+    private void envoyerEmailResend(String to, String subject, String htmlContent) {
+        String url = "https://api.resend.com/emails";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(cleApiResend);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("from", adresseExpediteur);
+        body.put("to", List.of(to));
+        body.put("subject", subject);
+        body.put("html", htmlContent);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Statut HTTP non-2xx recu de Resend: " + response.getStatusCode());
         }
     }
 

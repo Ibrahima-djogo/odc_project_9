@@ -97,7 +97,35 @@ public class RoleCheckService {
      * avancer/reculer le statut de n'importe quelle tâche de ce projet, pas
      * seulement celles qui lui sont assignées.
      */
+    /**
+     * Retourne true si l'utilisateur donné est membre du projet donné (a une
+     * ligne dans membres_projet, quel que soit son rôle sur ce projet).
+     * Utilisé pour le modèle "Trello" : tout membre du projet peut faire
+     * avancer/reculer le statut de n'importe quelle tâche de ce projet, pas
+     * seulement celles qui lui sont assignées.
+     */
     public boolean estMembreDuProjet(Long projetId, Long utilisateurId) {
         return membreProjetRepository.existsByProjetIdAndUtilisateurId(projetId, utilisateurId);
+    }
+
+    /**
+     * Vérifie que l'utilisateur connecté est membre de ce projet (ADMIN,
+     * créateur du projet, ou toute personne inscrite dans membres_projet).
+     * Lève 403 sinon.
+     */
+    public void exigerMembreOuChefDeProjet(Long projetId) {
+        Utilisateur u = getUtilisateurConnecte();
+        if (estAdmin(u)) {
+            return;
+        }
+        var projet = projetRepository.findById(projetId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projet", projetId));
+        if (projet.getCreateur().getId().equals(u.getId())) {
+            return;
+        }
+        if (!membreProjetRepository.existsByProjetIdAndUtilisateurId(projetId, u.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Vous devez être membre de ce projet pour y effectuer cette action.");
+        }
     }
 }

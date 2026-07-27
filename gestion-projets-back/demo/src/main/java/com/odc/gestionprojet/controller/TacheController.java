@@ -34,12 +34,12 @@ public class TacheController {
 
     /**
      * POST /api/taches
-     * Crée une nouvelle tâche. Réservé au chef du projet concerné.
+     * Crée une nouvelle tâche. Ouvert aux membres (invités ou créateur) du projet concerné.
      */
     @PostMapping
     public ResponseEntity<TacheResponse> creerTache(@Valid @RequestBody TacheRequest request) {
-        // Vérifier que l'appelant est chef sur le projet de la tâche
-        roleCheckService.exigerChefDeProjetSurProjet(request.getProjetId());
+        // Vérifier que l'appelant est membre ou chef sur le projet de la tâche
+        roleCheckService.exigerMembreOuChefDeProjet(request.getProjetId());
         TacheResponse response = tacheService.creerTache(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -85,19 +85,14 @@ public class TacheController {
     /**
      * PUT /api/taches/{id}
      * Met a jour les details generaux d'une tâche (titre, description,
-     * echeance, assignation...). Reserve au CHEF DE PROJET (ou ADMIN) du
-     * projet de cette tâche : un simple membre assigne ne peut PAS modifier
-     * ces details (seul son statut, via PATCH /statut, lui est ouvert).
-     * Le controle se fait sur le projet REEL de la tâche (id), pas sur celui
-     * envoyé dans le corps de la requête, pour eviter qu'un appelant ne
-     * fasse valider ses droits sur un projet different de celui de la tache visee.
+     * echeance, assignation...). Autorisé aux membres et chefs du projet.
      */
     @PutMapping("/{id}")
     public ResponseEntity<TacheResponse> modifierTache(
             @PathVariable Long id,
             @Valid @RequestBody TacheRequest request) {
         TacheResponse tacheExistante = tacheService.obtenirTache(id);
-        roleCheckService.exigerChefDeProjetSurProjet(tacheExistante.getProjetId());
+        roleCheckService.exigerMembreOuChefDeProjet(tacheExistante.getProjetId());
 
         TacheResponse response = tacheService.modifierTache(id, request);
         return ResponseEntity.ok(response);

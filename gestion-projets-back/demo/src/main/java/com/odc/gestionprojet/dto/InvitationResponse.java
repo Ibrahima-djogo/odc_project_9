@@ -28,4 +28,5 @@ public class InvitationResponse {
     private String inviteParNom;
     private LocalDateTime dateCreation;
     private LocalDateTime dateExpiration;
+    private String lienInvitation;
 }

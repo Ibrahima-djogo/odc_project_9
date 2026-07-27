@@ -39,11 +39,7 @@ export default function TableauKanban({ taches, projets, membres, projetFiltreId
         <div>
           <h1 className="h3 fw-bold text-dark mb-1">Tableau des Tâches</h1>
           <p className="text-secondary mb-0">
-            {(estChef || gereProjetActuel)
-              ? 'Organisez vos activités en colonnes fluides'
-              : aAuMoinsUneTacheModifiable
-                ? 'Faites avancer les tâches qui vous sont assignées'
-                : "Consultez les tâches de l'équipe (lecture seule)"}
+            Organisez et faites avancer les tâches de vos projets collaboratifs
           </p>
         </div>
         
@@ -60,8 +56,8 @@ export default function TableauKanban({ taches, projets, membres, projetFiltreId
             ))}
           </select>
 
-          {/* Bouton "Nouvelle Tâche" : ADMIN, chef global, ou chef du projet actuellement affiché */}
-          {(estChef || gereProjetActuel) && (
+          {/* Bouton "Nouvelle Tâche" : accessible à tout membre d'au moins un projet */}
+          {projets.length > 0 && (
             <button className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-2 shadow-sm text-nowrap px-3" onClick={() => surOuvrirModal(null)}>
               <Plus size={18} />
               <span>Nouvelle Tâche</span>

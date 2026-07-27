@@ -132,11 +132,17 @@ export default function ProjectDetails({ projectId, surFermer }) {
     try {
       setEnvoiInvitationEnCours(true);
       setMessageInvitation(null);
-      await api.inviterMembre(projectId, emailNettoye, roleAEnvoyer);
+      const res = await api.inviterMembre(projectId, emailNettoye, roleAEnvoyer);
       setEmailInvitation('');
       setRoleInvitation('MEMBRE');
       setRoleInvitationLibre('');
-      setMessageInvitation({ type: 'success', texte: `Invitation envoyée à ${emailNettoye}.` });
+      const lien = res?.lienInvitation;
+      setMessageInvitation({
+        type: 'success',
+        texte: lien
+          ? `Invitation créée pour ${emailNettoye} ! Lien d'accès : ${lien}`
+          : `Invitation créée pour ${emailNettoye}.`
+      });
       await chargerInvitations();
     } catch (err) {
       console.error(err);
@@ -448,7 +454,20 @@ export default function ProjectDetails({ projectId, surFermer }) {
             </div>
             {messageInvitation && (
               <div className={`alert alert-${messageInvitation.type} fs-8 py-2 px-3 mt-3 mb-0 rounded-3`}>
-                {messageInvitation.texte}
+                {(() => {
+                  const matchUrl = messageInvitation.texte?.match(/(https?:\/\/[^\s]+)/);
+                  if (!matchUrl) return messageInvitation.texte;
+                  const url = matchUrl[0];
+                  const avant = messageInvitation.texte.substring(0, matchUrl.index);
+                  return (
+                    <span>
+                      {avant}
+                      <code className="fw-bold text-dark ms-1 p-1 bg-white border rounded" style={{ wordBreak: 'break-all', userSelect: 'all' }}>
+                        {url}
+                      </code>
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </form>

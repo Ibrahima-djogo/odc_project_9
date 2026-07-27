@@ -89,10 +89,34 @@ function App() {
     return () => window.removeEventListener('resize', gererRedimensionnement);
   }, []);
 
+  // Traitement d'une invitation lorsqu'un utilisateur est connecté
+  const traiterInvitation = async (token) => {
+    if (!token) return;
+    try {
+      const resultat = await api.accepterInvitation(token);
+      await chargerDonnees();
+      if (resultat?.projetId) {
+        setProjetFiltreId(resultat.projetId.toString());
+        setVueActive('kanban');
+      }
+      declencherToast('Vous avez rejoint le projet avec succès !');
+    } catch (err) {
+      console.error("Erreur lors de l'acceptation de l'invitation :", err);
+      declencherToast(err.message || "Impossible d'accepter cette invitation.", 'danger');
+    } finally {
+      window.history.replaceState({}, '', window.location.pathname);
+      setInviteToken(null);
+    }
+  };
+
   // Dès qu'un utilisateur est connecté, on charge ses données depuis le serveur
   useEffect(() => {
     if (utilisateurConnecte) {
-      chargerDonnees();
+      chargerDonnees().then(() => {
+        if (inviteToken) {
+          traiterInvitation(inviteToken);
+        }
+      });
     }
   }, [utilisateurConnecte]);
 
@@ -259,22 +283,7 @@ function App() {
       // Si la connexion/inscription vient d'un lien d'invitation, on
       // l'accepte automatiquement puis on atterrit directement sur le projet.
       if (inviteToken) {
-        try {
-          const resultat = await api.accepterInvitation(inviteToken);
-          if (resultat?.projetId) {
-            setProjetFiltreId(resultat.projetId.toString());
-            setVueActive('kanban');
-          }
-          declencherToast('Vous avez rejoint le projet avec succès !');
-        } catch (err) {
-          console.error("Erreur lors de l'acceptation de l'invitation :", err);
-          declencherToast(err.message || "Impossible d'accepter cette invitation.", 'danger');
-        } finally {
-          // Nettoie l'URL (retire ?invite=...) pour ne pas ré-accepter au
-          // prochain rafraîchissement de la page.
-          window.history.replaceState({}, '', window.location.pathname);
-          setInviteToken(null);
-        }
+        await traiterInvitation(inviteToken);
       }
     } catch (err) {
       console.error('Erreur chargement profil :', err);
@@ -375,7 +384,7 @@ function App() {
       await chargerDonnees();
     } catch (err) {
       console.error(err);
-      declencherToast("Erreur lors de la sauvegarde de la tâche", "danger");
+      declencherToast(err.message || "Erreur lors de la sauvegarde de la tâche", "danger");
     }
   };
 
@@ -560,26 +569,10 @@ function App() {
     p.description.toLowerCase().includes(recherche.toLowerCase())
   );
 
-  // Déterminer si l'utilisateur est un simple membre (rôle global)
-  const estMembreSimple = utilisateurConnecte?.roleGlobal === 'MEMBRE';
-
-  // Projets sur lesquels l'utilisateur connecté est CHEF_PROJET (ou ADMIN) :
-  // même en étant globalement MEMBRE, il doit voir TOUTES les tâches de ces
-  // projets-là, pas seulement celles qui lui sont assignées.
-  const projetsIdsGeres = new Set(
-    projets.filter(p => p.userHasManagerRights === true).map(p => p.id)
-  );
-
-  // Filtrage des tâches : par recherche, puis par membre si rôle MEMBRE
-  // (sauf sur les projets que l'utilisateur gère spécifiquement)
+  // Filtrage des tâches : par recherche réactive
   const tachesFiltrees = taches.filter(t => {
-    const correspondRecherche = t.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+    return t.titre.toLowerCase().includes(recherche.toLowerCase()) ||
       t.description.toLowerCase().includes(recherche.toLowerCase());
-    if (!correspondRecherche) return false;
-    if (estMembreSimple && !projetsIdsGeres.has(t.projetId)) {
-      return String(t.membreAssigneId) === String(utilisateurConnecte.id);
-    }
-    return true;
   });
 
   return (

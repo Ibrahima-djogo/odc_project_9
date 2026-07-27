@@ -34,10 +34,20 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
     }
   };
 
-  const estInvitation = mailSelectionne && (
-    mailSelectionne.expediteur === 'notifications@workpulse-odc.com' ||
-    (mailSelectionne.sujet && mailSelectionne.sujet.toLowerCase().includes('invitation')) ||
-    (mailSelectionne.sujet && mailSelectionne.sujet.toLowerCase().includes('bienvenue'))
+  const estDestinataire = Boolean(
+    mailSelectionne &&
+    utilisateurConnecte?.email &&
+    mailSelectionne.destinataire?.toLowerCase() === utilisateurConnecte.email.toLowerCase()
+  );
+
+  const estInvitation = Boolean(
+    mailSelectionne && (
+      mailSelectionne.expediteur === 'notifications@workpulse-odc.com' ||
+      (mailSelectionne.sujet && mailSelectionne.sujet.toLowerCase().includes('invitation')) ||
+      (mailSelectionne.sujet && mailSelectionne.sujet.toLowerCase().includes('invite')) ||
+      (mailSelectionne.sujet && mailSelectionne.sujet.toLowerCase().includes('bienvenue')) ||
+      (mailSelectionne.messageTexte && mailSelectionne.messageTexte.includes('?invite='))
+    )
   );
 
   return (
@@ -145,9 +155,40 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
                           </span>
                         </div>
 
-                        {/* Contenu principal */}
+                        {/* Contenu principal avec liens cliquables SEULEMENT pour l'invité (destinataire) */}
                         <div className="fs-7 text-dark-emphasis lh-base p-3 bg-white border border-light-subtle rounded-3 shadow-sm mb-3" style={{ fontFamily: 'Georgia, serif', whiteSpace: 'pre-line' }}>
-                          {mailSelectionne.messageTexte}
+                          {(() => {
+                            const texte = mailSelectionne.messageTexte || '';
+                            const matchUrl = texte.match(/(https?:\/\/[^\s]+)/);
+                            if (!matchUrl) return texte;
+
+                            const url = matchUrl[0];
+                            const avant = texte.substring(0, matchUrl.index);
+                            const apres = texte.substring(matchUrl.index + url.length);
+                            return estDestinataire ? (
+                              <>
+                                {avant}
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="fw-bold text-warning-emphasis text-decoration-underline d-inline-block my-1"
+                                  style={{ wordBreak: 'break-all' }}
+                                >
+                                  {url}
+                                </a>
+                                {apres}
+                              </>
+                            ) : (
+                              <>
+                                {avant}
+                                <span className="fw-semibold text-muted d-inline-block my-1 p-1 bg-light border rounded" style={{ wordBreak: 'break-all', userSelect: 'all' }}>
+                                  {url}
+                                </span>
+                                {apres}
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* Bloc d'informations supplémentaires (si disponible) */}
@@ -159,30 +200,51 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
                             </div>
                             <div className="d-flex align-items-center gap-2">
                               <KeyRound size={16} className="text-warning" />
-                              <span>Statut d'accès : <span className="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 fs-8">ACTIF (Soutenance ODC)</span></span>
+                              <span>Statut d'accès : <span className="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 fs-8">ACTIF & PARTICIPATIF</span></span>
                             </div>
                           </div>
                         )}
 
-                        {/* Bouton d'action */}
-                        <div className="text-center mt-4">
-                          <button 
-                            className="btn btn-warning text-dark fw-bold btn-sm shadow-sm d-inline-flex align-items-center gap-2"
-                            onClick={accederAuProjet}
-                            style={{ opacity: 1, cursor: 'pointer' }}
-                          >
-                            <ExternalLink size={16} />
-                            Accéder à l'espace projet
-                          </button>
-                          {mailSelectionne.projetIds && mailSelectionne.projetIds.length > 0 && (
-                            <div className="mt-2 fs-8 text-muted">
-                              {(() => {
-                                const projetAssocie = projets.find(p => String(p.id) === String(mailSelectionne.projetIds[0]));
-                                return projetAssocie ? `Projet : ${projetAssocie.titre}` : '';
-                              })()}
-                            </div>
-                          )}
-                        </div>
+                        {/* Bouton d'action cliquable SEULEMENT pour le destinataire (l'invité) */}
+                        {estDestinataire ? (
+                          <div className="text-center mt-4 d-flex flex-column align-items-center gap-2">
+                            {(() => {
+                              const matchUrl = mailSelectionne.messageTexte?.match(/(https?:\/\/[^\s]+)/);
+                              if (matchUrl) {
+                                return (
+                                  <a
+                                    href={matchUrl[0]}
+                                    className="btn btn-warning text-dark fw-bold btn-sm shadow-sm d-inline-flex align-items-center gap-2"
+                                  >
+                                    <ExternalLink size={16} />
+                                    Accepter l'invitation & Rejoindre le projet
+                                  </a>
+                                );
+                              }
+                              return (
+                                <button 
+                                  className="btn btn-warning text-dark fw-bold btn-sm shadow-sm d-inline-flex align-items-center gap-2"
+                                  onClick={accederAuProjet}
+                                >
+                                  <ExternalLink size={16} />
+                                  Accéder à l'espace projet
+                                </button>
+                              );
+                            })()}
+                            {mailSelectionne.projetIds && mailSelectionne.projetIds.length > 0 && (
+                              <div className="mt-2 fs-8 text-muted">
+                                {(() => {
+                                  const projetAssocie = projets.find(p => String(p.id) === String(mailSelectionne.projetIds[0]));
+                                  return projetAssocie ? `Projet : ${projetAssocie.titre}` : '';
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center mt-4 p-2 bg-light border border-light-subtle rounded-3 fs-8 text-muted">
+                            ℹ️ Invitation envoyée à <strong>{mailSelectionne.destinataire}</strong>. Le lien d'accès est réservé au destinataire.
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div>
@@ -199,7 +261,39 @@ export default function ListeMails({ mails, membres = [], surSupprimerMail, surE
 
                         {/* Contenu principal */}
                         <div className="fs-7 text-dark lh-base p-4 bg-white border border-light-subtle rounded-3 shadow-sm" style={{ fontFamily: 'var(--bs-font-sans-serif)', whiteSpace: 'pre-line', minHeight: '120px' }}>
-                          {mailSelectionne.messageTexte}
+                          {(() => {
+                            const texte = mailSelectionne.messageTexte || '';
+                            const matchUrl = texte.match(/(https?:\/\/[^\s]+)/);
+                            if (!matchUrl) return texte;
+
+                            const url = matchUrl[0];
+                            const avant = texte.substring(0, matchUrl.index);
+                            const apres = texte.substring(matchUrl.index + url.length);
+
+                            return estDestinataire ? (
+                              <>
+                                {avant}
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="fw-bold text-primary text-decoration-underline d-inline-block my-1"
+                                  style={{ wordBreak: 'break-all' }}
+                                >
+                                  {url}
+                                </a>
+                                {apres}
+                              </>
+                            ) : (
+                              <>
+                                {avant}
+                                <span className="fw-semibold text-muted d-inline-block my-1 p-1 bg-light border rounded" style={{ wordBreak: 'break-all', userSelect: 'all' }}>
+                                  {url}
+                                </span>
+                                {apres}
+                              </>
+                            );
+                          })()}
                         </div>
                         
                         <div className="mt-4 p-3 bg-warning-subtle border border-warning-subtle rounded-3 fs-8 text-dark">

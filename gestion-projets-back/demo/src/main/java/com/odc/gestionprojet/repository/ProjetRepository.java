@@ -29,13 +29,13 @@ public interface ProjetRepository extends JpaRepository<Projet, Long> {
 
     /**
      * Recupere tous les projets dont un utilisateur donne est membre
-     * (createur OU simple membre). Necessite une requete un peu plus
-     * specifique, donc on l'ecrit nous-memes avec @Query (JPQL, proche
-     * du SQL mais qui travaille sur les entites Java plutot que les tables).
+     * (createur OU simple membre). La visibilite d'un projet depend de la presence
+     * dans la table membres_projet (quel que soit son role_projet), et pas uniquement
+     * de son statut de createur (id_createur).
      */
     @Query(
-        "SELECT DISTINCT p FROM Projet p LEFT JOIN p.membres m " +
-        "WHERE p.createur.id = :utilisateurId OR m.utilisateur.id = :utilisateurId"
+        "SELECT p FROM Projet p WHERE p.createur.id = :utilisateurId " +
+        "OR EXISTS (SELECT mp FROM MembreProjet mp WHERE mp.projet = p AND mp.utilisateur.id = :utilisateurId)"
     )
     List<Projet> findProjetsAccessiblesParUtilisateur(@Param("utilisateurId") Long utilisateurId);
 }

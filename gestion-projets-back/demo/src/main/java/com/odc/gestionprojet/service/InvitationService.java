@@ -10,10 +10,13 @@ import com.odc.gestionprojet.entity.Utilisateur;
 import com.odc.gestionprojet.exception.ConflictException;
 import com.odc.gestionprojet.exception.ResourceNotFoundException;
 import com.odc.gestionprojet.repository.InvitationRepository;
+import com.odc.gestionprojet.repository.MailRepository;
 import com.odc.gestionprojet.repository.MembreProjetRepository;
 import com.odc.gestionprojet.repository.ProjetRepository;
 import com.odc.gestionprojet.repository.UtilisateurRepository;
+import com.odc.gestionprojet.entity.Mail;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +55,10 @@ public class InvitationService {
     private final UtilisateurRepository utilisateurRepository;
     private final MembreProjetRepository membreProjetRepository;
     private final EmailService emailService;
+    private final MailRepository mailRepository;
+
+    @Value("${app.mail.frontend-url:http://localhost:5173}")
+    private String urlFrontend;
 
     /**
      * Cree une invitation, ou renouvelle (nouveau token, expiration reculee)
@@ -90,12 +97,29 @@ public class InvitationService {
         invitation.setDateAcceptation(null);
 
         Invitation sauvegardee = invitationRepository.save(invitation);
+        String lien = urlFrontend + "/?invite=" + tokenClair;
 
         emailService.envoyerInvitationProjet(
                 emailNormalise, projet.getNom(), invitation.getRoleProjet(),
                 inviteur.getPrenom() + " " + inviteur.getNom(), tokenClair);
 
-        return toResponse(sauvegardee);
+        try {
+            Mail internalMail = new Mail();
+            internalMail.setExpediteur(inviteur.getEmail());
+            internalMail.setDestinataire(emailNormalise);
+            internalMail.setNomMembre(inviteur.getPrenom() + " " + inviteur.getNom());
+            internalMail.setRoleMembre(invitation.getRoleProjet());
+            internalMail.setSujet(inviteur.getPrenom() + " vous invite à rejoindre \"" + projet.getNom() + "\"");
+            internalMail.setMessageTexte("Bonjour, vous avez été invité(e) au projet \"" + projet.getNom() + "\". Cliquez ici pour rejoindre : " + lien);
+            internalMail.setProjetIdsCsv(projet.getId().toString());
+            mailRepository.save(internalMail);
+        } catch (Exception e) {
+            // Ignorer si la messagerie interne échoue
+        }
+
+        InvitationResponse response = toResponse(sauvegardee);
+        response.setLienInvitation(lien);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -184,7 +208,7 @@ public class InvitationService {
         if (invitation.getDateExpiration().isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.GONE, "Cette invitation a expire.");
         }
-        if (!invitation.getEmail().equalsIgnoreCase(connecte.getEmail())) {
+        if (!invitation.getEmail().trim().equalsIgnoreCase(connecte.getEmail().trim())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Cette invitation a ete envoyee a une autre adresse e-mail. "
                             + "Connectez-vous avec l'adresse invitee (" + invitation.getEmail() + ").");
@@ -192,22 +216,19 @@ public class InvitationService {
 
         Long projetId = invitation.getProjet().getId();
 
-        if (STATUT_ACCEPTEE.equals(invitation.getStatut())) {
-            // Deja acceptee par ce meme utilisateur (verifie ci-dessus) : idempotent.
-            return projetId;
-        }
-
         if (!membreProjetRepository.existsByProjetIdAndUtilisateurId(projetId, connecte.getId())) {
             MembreProjet membre = new MembreProjet();
             membre.setProjet(invitation.getProjet());
             membre.setUtilisateur(connecte);
-            membre.setRoleProjet(invitation.getRoleProjet());
+            membre.setRoleProjet(invitation.getRoleProjet() != null ? invitation.getRoleProjet() : "MEMBRE");
             membreProjetRepository.save(membre);
         }
 
-        invitation.setStatut(STATUT_ACCEPTEE);
-        invitation.setDateAcceptation(LocalDateTime.now());
-        invitationRepository.save(invitation);
+        if (!STATUT_ACCEPTEE.equals(invitation.getStatut())) {
+            invitation.setStatut(STATUT_ACCEPTEE);
+            invitation.setDateAcceptation(LocalDateTime.now());
+            invitationRepository.save(invitation);
+        }
 
         return projetId;
     }
